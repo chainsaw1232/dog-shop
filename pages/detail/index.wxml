@@ -1,0 +1,153 @@
+<view class="page-container">
+
+<swiper class="product-swiper" indicator-dots="true" autoplay="true" interval="3000" duration="500" circular="true" wx:if="{{product.images && product.images.length > 0}}">
+  <block wx:for="{{product.images}}" wx:key="index">
+    <swiper-item>
+      <image src="{{item}}" class="swiper-image" mode="aspectFill" bindtap="previewImage" data-current="{{item}}" data-urls="{{product.images}}"/>
+    </swiper-item>
+  </block>
+</swiper>
+<image src="{{product.mainImage || 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/placeholder.png'}}" class="swiper-image" mode="aspectFill" wx:elif="{{product.mainImage}}" bindtap="previewImage" data-current="{{product.mainImage}}" data-urls="{{[product.mainImage]}}"></image>
+<image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/placeholder.png" class="swiper-image" mode="aspectFill" wx:else></image>
+
+<view class="product-info-section">
+  <view class="price-share-row">
+    <view class="price-container">
+      <text class="current-price">¥{{selectedSpec ? selectedSpec.price : product.price}}</text>
+      <text class="original-price" wx:if="{{(selectedSpec ? selectedSpec.originalPrice : product.originalPrice) && (selectedSpec ? selectedSpec.originalPrice : product.originalPrice) > (selectedSpec ? selectedSpec.price : product.price)}}">¥{{selectedSpec ? selectedSpec.originalPrice : product.originalPrice}}</text>
+    </view>
+    <button open-type="share" class="share-button">
+      <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/share.png" class="share-icon" mode="aspectFit"></image>
+      <text>分享</text>
+    </button>
+  </view>
+  <view class="product-name">{{product.name || '商品名称加载中...'}}</view>
+  <view class="sales-stock-row">
+    <text class="sales-info">销量 {{product.sales || 0}}</text>
+    <text class="stock-info">库存 {{currentStock}}件</text>
+  </view>
+</view>
+
+<view class="section spec-selection-section" bindtap="showSpecsPopup" data-action="addToCart">
+  <text class="section-title-label">规格</text>
+  <view class="spec-text">{{selectedSpecText || '请选择规格'}}</view>
+  <image class="arrow-right-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right.png" mode="aspectFit"></image>
+</view>
+
+<view class="section service-section">
+  <text class="section-title-label">服务</text>
+  <view class="service-items-container">
+    <block wx:for="{{services}}" wx:key="name">
+      <view class="service-item">
+        <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/check_shield.png" class="service-icon" mode="aspectFit"></image>
+        <text>{{item.name}}</text>
+      </view>
+    </block>
+  </view>
+</view>
+
+<view class="section review-preview-section">
+  <view class="section-header" bindtap="navigateToReviews">
+    <text class="section-title-label">商品评价 ({{reviewTotal || 0}})</text>
+    <view class="view-all-reviews">
+      <text>查看全部</text>
+      <image class="arrow-right-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right.png" mode="aspectFit"></image>
+    </view>
+  </view>
+  <view class="review-list" wx:if="{{reviews && reviews.length > 0}}">
+    <block wx:for="{{reviews}}" wx:key="_id">
+      <view class="review-item">
+        <view class="review-user-info">
+          <image class="user-avatar" src="{{item.userAvatarUrl || 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/avatar/default_avatar.png'}}" mode="aspectFill"></image>
+          <view class="user-name-rating">
+            <text class="user-name">{{item.userNickName || '匿名用户'}}</text>
+            <text class="review-rating">评分: {{item.rating}}星</text>
+          </view>
+          <text class="review-time">{{item.createTime}}</text>
+        </view>
+        <view class="review-content">{{item.content}}</view>
+        <view class="review-images" wx:if="{{item.images && item.images.length > 0}}">
+          <image wx:for="{{item.images}}" wx:for-item="imgUrl" wx:key="*this" src="{{imgUrl}}" class="review-image-item" mode="aspectFill" bindtap="previewImage" data-current="{{imgUrl}}" data-urls="{{item.images}}"></image>
+        </view>
+      </view>
+    </block>
+  </view>
+  <view class="no-reviews" wx:else>暂无评价</view>
+</view>
+
+<view class="section product-detail-description-section">
+  <view class="section-title-label detail-title">商品详情</view>
+  <rich-text nodes="{{product.description || '<view style=\"text-align:center;color:#999;padding:30rpx 0;\">暂无商品详情</view>'}}"></rich-text>
+</view>
+
+<view class="bottom-placeholder"></view>
+
+<view class="bottom-actions-bar">
+  <view class="actions-left">
+    <view class="action-item" bindtap="navigateToHome">
+      <image class="action-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/tabbar/home.png" mode="aspectFit"/>
+      <text class="action-text">首页</text>
+    </view>
+    <view class="action-item" bindtap="toggleFavorite">
+      <image class="action-icon" wx:if="{{!isFavorite}}" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/favorite.png" mode="aspectFit"/>
+      <image class="action-icon" wx:else src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/favorite_selected.png" mode="aspectFit"/>
+      <text class="action-text">收藏</text>
+    </view>
+    <view class="action-item" bindtap="navigateToCart">
+      <image class="action-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/tabbar/cart.png" mode="aspectFit"/>
+      <text class="action-text">购物车</text>
+      <view class="cart-badge" wx:if="{{cartCount > 0}}">{{cartCount > 99 ? '99+' : cartCount}}</view>
+    </view>
+  </view>
+  <view class="action-button add-to-cart-btn" bindtap="showSpecsPopup" data-action="addToCart">加入购物车</view>
+  <view class="action-button buy-now-btn" bindtap="showSpecsPopup" data-action="buyNow">立即购买</view>
+</view>
+
+<view class="specs-popup-mask" wx:if="{{showSpecsPopup}}" bindtap="hideSpecsPopup">
+  <view class="specs-popup-content" catchtap="doNothing"> <view class="popup-header">
+      <image class="popup-product-image" src="{{selectedSpec && selectedSpec.image ? selectedSpec.image : (product.mainImage || (product.images && product.images.length > 0 ? product.images[0] : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/placeholder.png'))}}" mode="aspectFill"></image>
+      <view class="popup-product-info">
+        <view class="popup-price">¥{{selectedSpec ? selectedSpec.price : product.price}}</view>
+        <view class="popup-stock">库存: {{currentStockInPopup}}件</view>
+        <view class="popup-selected-spec">已选: {{selectedSpecText || (product.specs && product.specs.length > 0 ? '请选择规格' : '默认')}}</view>
+      </view>
+      <image class="popup-close-btn" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/close.png" bindtap="hideSpecsPopup"></image>
+    </view>
+
+    <scroll-view scroll-y class="popup-body">
+      <view class="specs-section" wx:if="{{product.specs && product.specs.length > 0}}">
+        <view class="specs-title">选择规格</view>
+        <view class="specs-list">
+          <view
+            wx:for="{{product.specs}}"
+            wx:key="id" class="spec-item {{item.stock <= 0 ? 'disabled' : ''}} {{selectedSpec && (selectedSpec.id === item.id || selectedSpec._id === item._id) ? 'active' : ''}}"
+            data-spec="{{item}}"
+            bindtap="selectSpec"
+          >
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+
+      <view class="quantity-section">
+        <view class="quantity-title">购买数量</view>
+        <view class="quantity-control">
+          <view class="quantity-btn minus {{quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQuantity">-</view>
+          <input class="quantity-input" type="number" value="{{quantity}}" bindinput="onQuantityInput"/>
+          <view class="quantity-btn plus {{quantity >= currentStockInPopup ? 'disabled' : ''}}" bindtap="increaseQuantity">+</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="popup-confirm-btn-container">
+      <button
+        class="popup-confirm-btn"
+        bindtap="confirmAction" 
+        disabled="{{(product.specs && product.specs.length > 0 && !selectedSpec) || currentStockInPopup <= 0}}"
+      >
+        {{popupActionType === 'addToCart' ? '加入购物车' : '立即购买'}}
+      </button>
+    </view>
+  </view>
+</view>
+</view>

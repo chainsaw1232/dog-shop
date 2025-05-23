@@ -1,0 +1,318 @@
+/* pages/cart/index.wxss */
+.container.cart-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f4f4f4;
+  box-sizing: border-box;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 50rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.cart-list-scroll {
+  flex: 1;
+  padding-bottom: 100rpx; /* 底部栏高度 */
+  box-sizing: border-box;
+}
+
+/* --- 商品项整体样式 --- */
+.cart-item {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  margin: 20rpx;
+  padding: 25rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.06);
+}
+
+/* 1. 选择框容器和图标 - 确保显示 */
+.select-checkbox-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 20rpx;
+  padding-left: 5rpx;
+  flex-shrink: 0;
+}
+
+.checkbox-icon {
+  width: 38rpx;
+  height: 38rpx;
+  display: block; /* 确保图片显示 */
+}
+
+/* 2. 商品图片 */
+.product-image {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  margin-right: 20rpx;
+  background-color: #f0f0f0;
+  flex-shrink: 0;
+}
+
+/* 3. 商品信息包裹器 */
+.product-details-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 160rpx;
+  overflow: hidden;
+}
+
+.product-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 6rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-spec {
+  font-size: 22rpx;
+  color: #888;
+  margin-bottom: 8rpx;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 数量调整器样式 */
+.quantity-adjuster {
+  display: flex;
+  align-items: center;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+  overflow: hidden; /* 确保圆角生效 */
+}
+
+.product-price {
+  font-size: 30rpx;
+  color: #e64340;
+  font-weight: bold;
+  white-space: nowrap;
+  margin-right: auto; /* 让价格尽可能靠左，给数量控制器留空间 */
+}
+
+/* 数量控制器 - 重点修复 */
+.quantity-control {
+  display: flex;  /* 内部元素水平排列 */
+  align-items: center; /* 垂直居中 */
+  flex-shrink: 0; /* 防止被价格挤压 */
+  /* border: 1rpx solid blue; /* 临时边框，用于调试 */
+}
+
+.quantity-btn {
+  width: 40rpx;         /* 修改：按钮宽度 */
+  height: 40rpx;        /* 修改：按钮高度 */
+  line-height: 40rpx;   /* 修改：确保文字垂直居中 */
+  padding: 0;
+  margin: 0;
+  font-size: 30rpx;     /* 修改：适配按钮大小 */
+  min-width: 10rpx;     /* 新增：明确最小宽度 */
+  text-align: center;
+  background-color: #f5f7fa;
+  color: #606266;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid #dcdfe6;
+}
+.quantity-btn::after { /* 移除button的默认边框 */
+  border: none;
+}
+
+.quantity-btn.minus-btn {
+  border-top-left-radius: 8rpx;
+  border-bottom-left-radius: 8rpx;
+}
+.quantity-btn.plus-btn {
+  border-top-right-radius: 8rpx;
+  border-bottom-right-radius: 8rpx;
+}
+
+.quantity-input {
+  width: 50rpx;          /* 修改：输入框宽度 */
+  height: 40rpx;         /* 修改：输入框高度，与按钮一致 */
+  line-height: 40rpx;    /* 修改：确保文字垂直居中 */
+  text-align: center;
+  border-top: 1rpx solid #dcdfe6;
+  border-bottom: 1rpx solid #dcdfe6;
+  border-left: 1rpx solid #dcdfe6;
+  border-right: 1rpx solid #dcdfe6;
+  font-size: 22rpx;      /* 修改：适配输入框大小 */
+  color: #303133;
+  min-height: 40rpx;     /* 修改：确保输入框高度 */
+  background-color: #fff;
+  box-sizing: border-box;
+  margin: 0 -1rpx;       /* 关键：使用负margin让输入框的边框与按钮的边框重合 */
+  position: relative;
+  z-index: 1;
+  padding: 0;            /* 新增：确保无内边距 */
+}
+
+.quantity-btn.disabled-style {
+  background-color: #f5f7fa;
+  color: #c0c4cc;
+  border-color: #e4e7ed;
+}
+
+
+/* --- 空购物车和推荐部分样式 --- */
+.empty-cart-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50rpx 20rpx; box-sizing: border-box; }
+.empty-cart-image { width: 240rpx; height: 240rpx; margin-bottom: 40rpx; }
+.empty-cart-text { font-size: 30rpx; color: #999; margin-bottom: 50rpx; text-align: center; line-height: 1.5; }
+.empty-cart-btn { width: 320rpx; height: 80rpx; line-height: 80rpx; background-color: #FF8C69; color: #fff; border-radius: 40rpx; font-size: 32rpx; font-weight: 500; }
+.empty-cart-btn::after { border: none; }
+.recommend-section { width: 100%; margin-top: 60rpx; padding: 0 20rpx 20rpx; box-sizing: border-box; }
+.recommend-title-container { display: flex; align-items: center; justify-content: center; margin-bottom: 30rpx; }
+.recommend-title-container .line { flex: 1; height: 1px; background-color: #e0e0e0; }
+.recommend-title-text { font-size: 28rpx; color: #555; margin: 0 30rpx; font-weight: 500; }
+.recommend-list { display: flex; flex-wrap: wrap; justify-content: space-between; }
+.recommend-item { width: calc(50% - 15rpx); background-color: #fff; border-radius: 16rpx; margin-bottom: 30rpx; padding: 20rpx; box-sizing: border-box; box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.06); display: flex; flex-direction: column; }
+.recommend-image { width: 100%; height: 0; padding-bottom: 100%; border-radius: 12rpx; margin-bottom: 15rpx; background-color: #f0f0f0; background-size: cover; background-position: center; }
+.recommend-name { font-size: 26rpx; color: #333; line-height: 1.4; height: 72rpx; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 10rpx; }
+.recommend-price { font-size: 30rpx; color: #e64340; font-weight: bold; margin-top: auto; }
+
+
+/* --- 底部操作栏样式 - 四等分布局 --- */
+.bottom-bar-grid {
+ position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100rpx;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20rpx;
+  border-top: 1rpx solid #eee;
+  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.bottom-bar-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 3rpx;
+  text-align: center;
+  overflow: hidden;
+}
+
+.bottom-bar-cell + .bottom-bar-cell {
+  border-left: 1rpx solid #f5f5f5;
+}
+
+.select-all-cell {
+  justify-content: center;
+  padding-left: 8rpx;
+}
+.select-all-text {
+  font-size: 24rpx;
+  color: #333;
+  margin-left: 6rpx;
+}
+.bottom-bar-grid .small-checkbox {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.total-price-cell {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding-left: 8rpx;
+  flex-shrink: 0;
+}
+.total-amount-line {
+  display: flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.total-label {
+  font-size: 22rpx;
+  color: #555;
+}
+.total-label-placeholder {
+  font-size: 22rpx;
+  color: #999;
+}
+.total-price-value {
+  font-size: 30rpx;
+  color: #e64340;
+  font-weight: bold;
+  margin-left: 4rpx;
+}
+.shipping-fee-tip {
+  font-size: 18rpx;
+  color: #aaa;
+  margin-top: 1rpx;
+  white-space: nowrap;
+}
+
+.action-button-cell {
+  padding: 0 5rpx;
+}
+
+.action-btn {
+  width: auto;
+  min-width: 0;
+  height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 12rpx;
+  border-radius: 26rpx;
+  font-size: 20rpx;
+  text-align: center;
+  border: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  transition: background-color 0.2s;
+  margin: 0 3rpx;
+}
+.action-btn::after {
+  border: none;
+}
+
+.remove-selected-btn {
+  background-color: #fff7e6;
+  color: #fa8c16;
+}
+.remove-selected-btn:active {
+  background-color: #ffeee6;
+}
+
+.checkout-btn {
+  background-color: #FF8C69;
+  color: #fff;
+}
+.checkout-btn:active {
+  background-color: #ff7a54;
+}
+
+.action-btn.disabled-style {
+  background-color: #f5f5f5 !important;
+  color: #bfbfbf !important;
+  opacity: 0.7;
+}

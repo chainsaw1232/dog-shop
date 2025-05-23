@@ -1,0 +1,46 @@
+<!--components/product-card/index.wxml-->
+<view class="product-card {{mode}}" bindtap="onTap">
+  <!-- 默认模式和简洁模式 -->
+  <block wx:if="{{mode === 'default' || mode === 'simple'}}">
+    <view class="product-image-container">
+      <image src="{{product.imageUrl}}" class="product-image" mode="aspectFill"></image>
+      <view class="product-tag" wx:if="{{product.tag}}">{{product.tag}}</view>
+    </view>
+    <view class="product-info">
+      <view class="product-name text-ellipsis-2">{{product.name}}</view>
+      <view class="product-price-row">
+        <view class="product-price">
+          <text class="price-unit">¥</text>
+          <text class="price-value">{{product.price}}</text>
+          <text class="price-original" wx:if="{{product.originalPrice > product.price}}">¥{{product.originalPrice}}</text>
+        </view>
+        <view class="product-sales" wx:if="{{mode === 'default'}}">销量 {{product.sales}}</view>
+      </view>
+      <view class="product-actions" wx:if="{{mode === 'default'}}">
+        <view class="action-btn favorite {{product.isFavorite ? 'active' : ''}}" catchtap="onFavoriteTap">
+          <image src="{{product.isFavorite ? 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/favorite_active.png' : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/favorite.png'}}" class="action-icon"></image>
+        </view>
+        <view class="action-btn cart" catchtap="onCartTap">
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/cart_add.png" class="action-icon"></image>
+        </view>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 横向模式 -->
+  <block wx:if="{{mode === 'horizontal'}}">
+    <image src="{{product.imageUrl}}" class="h-product-image" mode="aspectFill"></image>
+    <view class="h-product-info">
+      <view class="h-product-name text-ellipsis-2">{{product.name}}</view>
+      <view class="h-product-desc text-ellipsis" wx:if="{{product.description}}">{{product.description}}</view>
+      <view class="h-product-bottom">
+        <view class="h-product-price">
+          <text class="price-unit">¥</text>
+          <text class="price-value">{{product.price}}</text>
+          <text class="price-original" wx:if="{{product.originalPrice > product.price}}">¥{{product.originalPrice}}</text>
+        </view>
+        <view class="h-product-sales">销量 {{product.sales}}</view>
+      </view>
+    </view>
+  </block>
+</view>

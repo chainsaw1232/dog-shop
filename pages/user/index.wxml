@@ -1,0 +1,92 @@
+<view class="container user-page">
+  <view class="user-info-card">
+    <image class="avatar" src="{{userInfo.avatarUrl || '../../static/images/avatar/default_avatar.png'}}" mode="aspectFill"></image>
+    <view class="nickname-section">
+      <text class="nickname">{{userInfo.nickName || '点击登录'}}</text>
+      <button wx:if="{{!userInfo || userInfo.nickName === '汪汪用户'}}" class="login-button" size="mini" bindtap="login">
+        授权登录
+      </button>
+    </view>
+    </view>
+
+  <view class="section-card order-section">
+    <view class="section-header">
+      <text class="section-title">我的订单</text>
+      <view class="section-more" bindtap="navigateToOrderList" data-type="all">
+        全部订单 <text class="arrow">></text>
+      </view>
+    </view>
+    <view class="order-status-grid">
+      <view class="status-item" bindtap="navigateToOrderList" data-type="unpaid">
+        <image class="status-icon" src="{{menuIcons.order}}" mode="aspectFit"></image> <text class="status-text">待付款</text>
+        <view class="badge" wx:if="{{orderCount.unpaid > 0}}">{{orderCount.unpaid}}</view>
+      </view>
+      <view class="status-item" bindtap="navigateToOrderList" data-type="unshipped">
+        <image class="status-icon" src="{{menuIcons.order}}" mode="aspectFit"></image>
+        <text class="status-text">待发货</text>
+        <view class="badge" wx:if="{{orderCount.unshipped > 0}}">{{orderCount.unshipped}}</view>
+      </view>
+      <view class="status-item" bindtap="navigateToOrderList" data-type="shipped">
+        <image class="status-icon" src="{{menuIcons.order}}" mode="aspectFit"></image>
+        <text class="status-text">待收货</text>
+        <view class="badge" wx:if="{{orderCount.shipped > 0}}">{{orderCount.shipped}}</view>
+      </view>
+      <view class="status-item" bindtap="navigateToOrderList" data-type="completed">
+        <image class="status-icon" src="{{menuIcons.order}}" mode="aspectFit"></image>
+        <text class="status-text">已完成</text>
+        </view>
+      <view class="status-item" bindtap="navigateToOrderList" data-type="afterSale"> <image class="status-icon" src="{{menuIcons.order}}" mode="aspectFit"></image> <text class="status-text">售后</text>
+        </view>
+    </view>
+  </view>
+
+  <view class="section-card menu-section">
+    <view class="menu-item" bindtap="navigateToAddress">
+      <image class="menu-icon" src="{{menuIcons.address}}" mode="aspectFit"></image>
+      <text class="menu-text">收货地址</text>
+      <text class="arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="navigateToCoupon">
+      <image class="menu-icon" src="{{menuIcons.coupon}}" mode="aspectFit"></image>
+      <text class="menu-text">我的优惠券</text>
+      <text class="arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="navigateToFavorite">
+      <image class="menu-icon" src="{{menuIcons.favorite}}" mode="aspectFit"></image>
+      <text class="menu-text">我的收藏</text>
+      <text class="arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="contactService">
+      <button open-type="contact" class="contact-button" plain="true">
+        <image class="menu-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/service_placeholder.png" mode="aspectFit"></image> <text class="menu-text">联系客服</text>
+      </button>
+      <text class="arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="navigateToAbout">
+      <image class="menu-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/about_placeholder.png" mode="aspectFit"></image> <text class="menu-text">关于我们</text>
+      <text class="arrow">></text>
+    </view>
+  </view>
+
+  <view class="recommend-section" wx:if="{{recommendProducts && recommendProducts.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">为您推荐</text>
+    </view>
+    <view class="products-grid">
+      <view class="product-card" wx:for="{{recommendProducts}}" wx:key="id" bindtap="navigateToDetail" data-id="{{item._id || item.id}}">
+        <image class="product-image" src="{{item.imageUrl || item.mainImage || '../../static/images/products/product_placeholder.png'}}" mode="aspectFill"></image>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <view class="product-price-row">
+            <text class="product-price">¥{{item.price}}</text>
+            <text class="product-original-price" wx:if="{{item.originalPrice && item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+          </view>
+          </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="page-footer">
+    <text class="footer-text">汪汪零食铺 · 用心爱宠</text>
+  </view>
+</view>

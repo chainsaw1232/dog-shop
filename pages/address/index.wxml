@@ -1,0 +1,110 @@
+<!--address/index.wxml-->
+<view class="container">
+  <!-- 地址列表 -->
+  <view class="address-list" wx:if="{{addresses.length > 0}}">
+    <view class="address-item" wx:for="{{addresses}}" wx:key="id">
+      <!-- 地址信息 -->
+      <view class="address-content" bindtap="{{selectMode ? 'selectAddress' : ''}}" data-address="{{item}}">
+        <view class="address-info">
+          <view class="address-name-phone">
+            <text class="address-name">{{item.name}}</text>
+            <text class="address-phone">{{item.phone}}</text>
+            <text class="address-default" wx:if="{{item.isDefault}}">默认</text>
+          </view>
+          <view class="address-detail">{{item.province}}{{item.city}}{{item.district}}{{item.detail}}</view>
+        </view>
+      </view>
+      
+      <!-- 操作按钮 -->
+      <view class="address-actions" wx:if="{{!selectMode}}">
+        <view class="action-item {{item.isDefault ? 'disabled' : ''}}" bindtap="setDefault" data-id="{{item.id}}">
+          <image src="{{item.isDefault ? 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/default_active.png' : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/default.png'}}" class="action-icon"></image>
+          <text>默认地址</text>
+        </view>
+        <view class="action-item" bindtap="editAddress" data-address="{{item}}">
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/edit.png" class="action-icon"></image>
+          <text>编辑</text>
+        </view>
+        <view class="action-item" bindtap="deleteAddress" data-id="{{item.id}}">
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/delete.png" class="action-icon"></image>
+          <text>删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 空地址状态 -->
+  <view class="empty-address" wx:else>
+    <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty_address.png" class="empty-image"></image>
+    <text>暂无收货地址</text>
+  </view>
+  
+  <!-- 添加地址按钮 -->
+  <view class="add-address-btn" bindtap="addAddress">
+    <text>+ 新增收货地址</text>
+  </view>
+  
+  <!-- 地址表单弹窗 -->
+  <view class="address-form-popup {{showForm ? 'show' : ''}}">
+    <view class="popup-mask" bindtap="hideAddressForm"></view>
+    <view class="popup-content">
+      <view class="popup-header">
+        <text class="popup-title">{{editMode ? '编辑地址' : '新增地址'}}</text>
+        <view class="popup-close" bindtap="hideAddressForm">×</view>
+      </view>
+      
+      <view class="popup-body">
+        <view class="form-item">
+          <text class="form-label">收货人</text>
+          <input class="form-input" placeholder="请输入收货人姓名" value="{{formData.name}}" bindinput="inputName" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">手机号码</text>
+          <input class="form-input" type="number" placeholder="请输入手机号码" value="{{formData.phone}}" bindinput="inputPhone" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">所在地区</text>
+          <view class="region-picker" bindtap="openRegionPicker">
+            <text class="{{formData.region ? '' : 'placeholder'}}">{{formData.region || '请选择省/市/区'}}</text>
+            <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/arrow_right.png" class="arrow-icon"></image>
+          </view>
+        </view>
+        <view class="form-item">
+          <text class="form-label">详细地址</text>
+          <textarea class="form-textarea" placeholder="请输入详细地址" value="{{formData.detail}}" bindinput="inputDetail"></textarea>
+        </view>
+        <view class="form-item">
+          <switch checked="{{formData.isDefault}}" bindchange="switchDefault" color="#FF8C69" />
+          <text class="switch-label">设为默认收货地址</text>
+        </view>
+      </view>
+      
+      <view class="popup-footer">
+        <button class="btn-save" bindtap="saveAddress">保存</button>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 地区选择器 -->
+  <view class="region-picker-popup {{showRegionPicker ? 'show' : ''}}">
+    <view class="popup-mask" bindtap="cancelRegionPicker"></view>
+    <view class="region-picker-content">
+      <view class="region-picker-header">
+        <view class="region-picker-cancel" bindtap="cancelRegionPicker">取消</view>
+        <view class="region-picker-title">所在地区</view>
+        <view class="region-picker-confirm" bindtap="confirmRegionPicker">确定</view>
+      </view>
+      <picker-view class="region-picker-view" value="{{regionValue}}" bindchange="regionPickerChange">
+        <picker-view-column>
+          <view class="picker-item" wx:for="{{provinces}}" wx:key="code">{{item.name}}</view>
+        </picker-view-column>
+        <picker-view-column>
+          <view class="picker-item" wx:for="{{cities}}" wx:key="code">{{item.name}}</view>
+        </picker-view-column>
+        <picker-view-column>
+          <view class="picker-item" wx:for="{{districts}}" wx:key="code">{{item.name}}</view>
+        </picker-view-column>
+      </picker-view>
+    </view>
+  </view>
+</view>

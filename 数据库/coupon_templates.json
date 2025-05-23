@@ -1,0 +1,1 @@
+{"_id":"tpl_newuser_01","name":"新人专享券满100减10","type":"fixed_amount","amount":10.00,"minAmount":100.00,"scope":"all","validDays":30,"totalQuantity":10000,"issuedQuantity":500,"status":"active","description":"新用户首次下单可用，全场通用。","createTime":{"$date":"2025-04-01T00:00:00.000Z"},"updateTime":{"$date":"2025-04-01T00:00:00.000Z"}}

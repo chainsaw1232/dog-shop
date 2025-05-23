@@ -1,0 +1,44 @@
+<!--favorite/index.wxml-->
+<view class="container">
+  <!-- 收藏列表 -->
+  <view class="favorite-list" wx:if="{{favorites.length > 0}}">
+    <view class="favorite-item" wx:for="{{favorites}}" wx:key="id">
+      <view class="product-info" bindtap="navigateToDetail" data-id="{{item.productId}}">
+        <image src="{{item.productImage}}" class="product-image" mode="aspectFill"></image>
+        <view class="product-detail">
+          <view class="product-name text-ellipsis-2">{{item.productName}}</view>
+          <view class="product-price">
+            <text class="price-current">¥{{item.price}}</text>
+            <text class="price-original" wx:if="{{item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+          </view>
+          <view class="product-sales">销量 {{item.sales}}</view>
+        </view>
+      </view>
+      <view class="favorite-actions">
+        <view class="action-btn btn-cart" catchtap="addToCart" data-id="{{item.productId}}">
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/cart_add.png" class="action-icon"></image>
+        </view>
+        <view class="action-btn btn-delete" catchtap="removeFavorite" data-id="{{item.id}}">
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/delete.png" class="action-icon"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty_favorite.png" class="empty-image"></image>
+    <text>暂无收藏商品</text>
+    <button class="btn-to-shop" bindtap="navigateToShop">去逛逛</button>
+  </view>
+  
+  <!-- 加载更多 -->
+  <view class="loading-more" wx:if="{{favorites.length > 0 && hasMore}}">
+    <text wx:if="{{isLoading}}">加载中...</text>
+    <text wx:else bindtap="loadMore">点击加载更多</text>
+  </view>
+  
+  <view class="no-more" wx:if="{{favorites.length > 0 && !hasMore}}">
+    <text>没有更多收藏了</text>
+  </view>
+</view>

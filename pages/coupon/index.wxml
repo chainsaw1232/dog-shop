@@ -1,0 +1,59 @@
+<!--coupon/index.wxml-->
+<view class="container">
+  <!-- 优惠券选项卡 -->
+  <view class="coupon-tabs">
+    <view class="tab-item {{currentTab === 'available' ? 'active' : ''}}" bindtap="switchTab" data-type="available">
+      <text>可使用</text>
+    </view>
+    <view class="tab-item {{currentTab === 'used' ? 'active' : ''}}" bindtap="switchTab" data-type="used">
+      <text>已使用</text>
+    </view>
+    <view class="tab-item {{currentTab === 'expired' ? 'active' : ''}}" bindtap="switchTab" data-type="expired">
+      <text>已过期</text>
+    </view>
+  </view>
+  
+  <!-- 优惠券列表 -->
+  <view class="coupon-list" wx:if="{{coupons.length > 0}}">
+    <view class="coupon-item {{item.status !== 'available' ? 'disabled' : ''}}" 
+          wx:for="{{coupons}}" 
+          wx:key="id"
+          bindtap="{{item.status === 'available' ? 'useCoupon' : ''}}"
+          data-id="{{item.id}}">
+      <view class="coupon-left">
+        <view class="coupon-value">
+          <text class="coupon-unit">¥</text>
+          <text class="coupon-amount">{{item.amount}}</text>
+        </view>
+        <view class="coupon-condition">满{{item.minAmount}}元可用</view>
+      </view>
+      <view class="coupon-right">
+        <view class="coupon-name">{{item.name}}</view>
+        <view class="coupon-scope">{{item.scope}}</view>
+        <view class="coupon-date">{{item.validityPeriod}}</view>
+        <view class="coupon-status" wx:if="{{item.status !== 'available'}}">
+          <image src="{{item.status === 'used' ? 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/coupon_used.png' : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/coupon_expired.png'}}" class="status-icon"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty_coupon.png" class="empty-image"></image>
+    <text>暂无{{currentTab === 'available' ? '可用' : (currentTab === 'used' ? '已使用' : '已过期')}}优惠券</text>
+    <block wx:if="{{currentTab === 'available'}}">
+      <button class="btn-to-shop" bindtap="navigateToShop">去领券</button>
+    </block>
+  </view>
+  
+  <!-- 加载更多 -->
+  <view class="loading-more" wx:if="{{coupons.length > 0 && hasMore}}">
+    <text wx:if="{{isLoading}}">加载中...</text>
+    <text wx:else bindtap="loadMore">点击加载更多</text>
+  </view>
+  
+  <view class="no-more" wx:if="{{coupons.length > 0 && !hasMore}}">
+    <text>没有更多优惠券了</text>
+  </view>
+</view>

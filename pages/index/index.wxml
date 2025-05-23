@@ -1,0 +1,134 @@
+<view class="container">
+  <swiper class="banner" indicator-dots="{{true}}" autoplay="{{true}}" interval="{{3000}}" duration="{{500}}" circular="{{true}}" wx:if="{{banners.length > 0}}">
+    <block wx:for="{{banners}}" wx:key="_id">
+      <swiper-item bindtap="onBannerTap" data-item="{{item}}">
+        <image src="{{item.imageUrl}}" class="banner-image" mode="aspectFill" lazy-load="true"></image>
+      </swiper-item>
+    </block>
+  </swiper>
+  <view class="banner" wx:else>
+    <view class="skeleton-banner"></view>
+  </view>
+  
+  <view class="category-section" wx:if="{{categories.length > 0}}">
+    <view class="category-item" wx:for="{{categories}}" wx:key="_id" bindtap="onCategoryTap" data-id="{{item.id}}">
+      <image src="{{item.iconUrl}}" class="category-icon" mode="aspectFit" lazy-load="true"></image>
+      <text class="category-name">{{item.name}}</text>
+    </view>
+  </view>
+  <view class="category-section skeleton-categories" wx:else>
+      <view class="category-item" wx:for="{{[1,2,3,4]}}" wx:key="*this"><view class="skeleton-icon"></view><view class="skeleton-text-short"></view></view>
+  </view>
+  
+  <view class="coupon-section" wx:if="{{coupons && coupons.length > 0}}">
+    <view class="section-title">
+      <text class="title-text">优惠大放送</text>
+      <text class="title-more" bindtap="onMoreCouponTap">更多<text>></text></text>
+    </view>
+    <scroll-view scroll-x class="coupon-scroll">
+      <view class="coupon-item" wx:for="{{coupons}}" wx:key="_id" bindtap="onCouponTap" data-id="{{item._id}}">
+        <view class="coupon-left">
+          <view class="coupon-value">
+            <text class="coupon-unit">¥</text>
+            <text class="coupon-amount">{{item.amount}}</text>
+          </view>
+          <view class="coupon-condition">满{{item.minAmount}}元可用</view>
+        </view>
+        <view class="coupon-right">
+          <view class="coupon-name">{{item.name}}</view>
+          <view class="coupon-date">有效期至 {{item.endTime ? item.endTime.split('T')[0] : '长期有效'}}</view>
+          <view class="coupon-btn">立即领取</view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+  
+  <view class="new-product-section">
+    <view class="section-title">
+      <text class="title-text">新品尝鲜</text>
+      <text class="title-more" bindtap="onMoreNewProductTap">更多<text>></text></text>
+    </view>
+    <view class="product-list" wx:if="{{newProducts.length > 0}}">
+      <view class="product-item" wx:for="{{newProducts}}" wx:key="_id" bindtap="onProductTap" data-id="{{item.id}}">
+        <image src="{{item.mainImage}}" class="product-image" mode="aspectFill" lazy-load="true"></image>
+        <view class="product-info">
+          <view class="product-name text-ellipsis-2">{{item.name}}</view>
+          <view class="product-price">
+            <text class="price-current">¥{{item.price}}</text>
+            <text class="price-original" wx:if="{{item.originalPrice && item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+          </view>
+        </view>
+        <view class="product-tag" wx:if="{{item.isNew}}">新品</view>
+      </view>
+    </view>
+    <view class="product-list skeleton-products" wx:else>
+        <view class="product-item" wx:for="{{[1,2]}}" wx:key="*this"><view class="skeleton-image"></view><view class="skeleton-text-long"></view><view class="skeleton-text-short"></view></view>
+    </view>
+  </view>
+  
+  <view class="hot-product-section">
+    <view class="section-title">
+      <text class="title-text">热销榜单</text>
+      <text class="title-more" bindtap="onMoreHotProductTap">更多<text>></text></text>
+    </view>
+    <view class="product-list" wx:if="{{hotProducts.length > 0}}">
+      <view class="product-item" wx:for="{{hotProducts}}" wx:key="_id" bindtap="onProductTap" data-id="{{item.id}}">
+        <image src="{{item.mainImage}}" class="product-image" mode="aspectFill" lazy-load="true"></image>
+        <view class="product-info">
+          <view class="product-name text-ellipsis-2">{{item.name}}</view>
+          <view class="product-price">
+            <text class="price-current">¥{{item.price}}</text>
+            <text class="price-original" wx:if="{{item.originalPrice && item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+          </view>
+          <view class="product-sales">已售{{item.sales || 0}}件</view>
+        </view>
+        <view class="product-tag hot-tag" wx:if="{{item.isHot}}">热销</view>
+      </view>
+    </view>
+     <view class="product-list skeleton-products" wx:else>
+        <view class="product-item" wx:for="{{[1,2]}}" wx:key="*this"><view class="skeleton-image"></view><view class="skeleton-text-long"></view><view class="skeleton-text-short"></view></view>
+    </view>
+  </view>
+  
+  <view class="brand-section" bindtap="onBrandTap" wx:if="{{brandInfo && brandInfo.imageUrl}}">
+    <image src="{{brandInfo.imageUrl}}" class="brand-image" mode="aspectFill" lazy-load="true"></image>
+    <view class="brand-overlay">
+      <view class="brand-title">{{brandInfo.title}}</view>
+      <view class="brand-desc">{{brandInfo.description}}</view>
+      <view class="brand-btn">了解更多</view>
+    </view>
+  </view>
+  <view class="brand-section skeleton-brand" wx:else>
+      <view class="skeleton-brand-image"></view>
+  </view>
+  
+  <view class="loading-more-section" wx:if="{{isHotProductsLoading}}">
+    <view class="loading-icon"></view>
+    <text class="loading-text">正在加载更多...</text>
+  </view>
+  <view class="loading-more-section" wx:if="{{isHotProductsEnd && hotProducts.length > 0 && !isHotProductsLoading}}">
+    <text class="loading-text">- 已经到底啦 -</text>
+  </view>
+
+  <view class="page-error-section" wx:if="{{isPageError}}">
+     <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty/empty_network_error.png" class="error-image" mode="aspectFit"></image>
+     <text class="error-text">{{errorMessage || '页面加载失败，请稍后重试'}}</text>
+     <button class="retry-button" bindtap="fetchHomePageData">点击重试</button>
+   </view>
+
+   <view class="page-skeleton" wx:if="{{isLoading && !banners.length && !categories.length}}">
+     <view class="skeleton-banner"></view>
+     <view class="skeleton-categories">
+       <view class="category-item" wx:for="{{[1,2,3,4]}}" wx:key="*this"><view class="skeleton-icon"></view><view class="skeleton-text-short"></view></view>
+     </view>
+     <view class="skeleton-title"></view>
+     <view class="skeleton-products">
+        <view class="product-item" wx:for="{{[1,2]}}" wx:key="*this"><view class="skeleton-image"></view><view class="skeleton-text-long"></view><view class="skeleton-text-short"></view></view>
+     </view>
+      <view class="skeleton-title"></view>
+     <view class="skeleton-products">
+        <view class="product-item" wx:for="{{[1,2]}}" wx:key="*this"><view class="skeleton-image"></view><view class="skeleton-text-long"></view><view class="skeleton-text-short"></view></view>
+     </view>
+   </view>
+
+</view>

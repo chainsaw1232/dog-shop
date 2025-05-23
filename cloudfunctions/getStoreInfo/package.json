@@ -1,0 +1,14 @@
+{
+  "name": "getStoreInfo",
+  "version": "1.0.0",
+  "description": "获取店铺配置信息云函数",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

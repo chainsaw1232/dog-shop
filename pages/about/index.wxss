@@ -1,0 +1,149 @@
+/* about/index.wxss */
+.container {
+  padding-bottom: 30rpx;
+}
+
+/* 通用区块样式 */
+.section {
+  background-color: #fff;
+  margin-bottom: 20rpx;
+  padding: 30rpx;
+  border-radius: 12rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  position: relative;
+  padding-left: 20rpx;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8rpx;
+  height: 32rpx;
+  background-color: #FF8C69;
+  border-radius: 4rpx;
+}
+
+.section-content {
+  padding: 10rpx 0;
+}
+
+/* 商城介绍样式 */
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30rpx;
+}
+
+.logo {
+  width: 200rpx;
+  height: 200rpx;
+}
+
+.intro-text {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+/* 我们的承诺样式 */
+.promise-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.promise-item:last-child {
+  margin-bottom: 0;
+}
+
+.promise-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin-right: 20rpx;
+}
+
+.promise-text {
+  flex: 1;
+}
+
+.promise-title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 6rpx;
+}
+
+.promise-desc {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 联系我们样式 */
+.contact-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.contact-item:last-child {
+  margin-bottom: 0;
+}
+
+.contact-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 20rpx;
+}
+
+.contact-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 关注我们样式 */
+.follow-container {
+  display: flex;
+  justify-content: space-around;
+  padding: 20rpx 0;
+}
+
+.follow-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qrcode {
+  width: 200rpx;
+  height: 200rpx;
+  margin-bottom: 20rpx;
+}
+
+.follow-item text {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 版本信息样式 */
+.version-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30rpx 0;
+}
+
+.version-info text {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.8;
+}

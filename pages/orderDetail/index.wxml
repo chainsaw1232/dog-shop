@@ -1,0 +1,141 @@
+<!--orderDetail/index.wxml-->
+<view class="container">
+  <!-- 订单状态 -->
+  <view class="order-status">
+    <view class="status-icon">
+      <image src="{{statusIcon}}" class="icon"></image>
+    </view>
+    <view class="status-info">
+      <view class="status-text">{{orderDetail.statusText}}</view>
+      <view class="status-desc">{{statusDesc}}</view>
+    </view>
+  </view>
+  
+  <!-- 物流信息 -->
+  <view class="logistics-section" wx:if="{{orderDetail.status === 'shipped' || orderDetail.status === 'completed'}}">
+    <view class="section-content" bindtap="viewLogistics">
+      <view class="logistics-info">
+        <view class="logistics-company">{{orderDetail.logistics.company}}</view>
+        <view class="logistics-number">{{orderDetail.logistics.number}}</view>
+        <view class="logistics-status">{{orderDetail.logistics.status}}</view>
+      </view>
+      <view class="arrow-right">
+        <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/arrow_right.png" class="arrow-icon"></image>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 收货地址 -->
+  <view class="address-section">
+    <view class="section-title">收货地址</view>
+    <view class="section-content">
+      <view class="address-info">
+        <view class="address-name-phone">
+          <text class="address-name">{{orderDetail.address.name}}</text>
+          <text class="address-phone">{{orderDetail.address.phone}}</text>
+        </view>
+        <view class="address-detail">{{orderDetail.address.province}}{{orderDetail.address.city}}{{orderDetail.address.district}}{{orderDetail.address.detail}}</view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 订单信息 -->
+  <view class="order-info-section">
+    <view class="section-title">订单信息</view>
+    <view class="section-content">
+      <view class="info-item">
+        <text class="info-label">订单编号</text>
+        <view class="info-value-copy">
+          <text class="info-value">{{orderDetail.orderNumber}}</text>
+          <view class="copy-btn" bindtap="copyOrderNumber">复制</view>
+        </view>
+      </view>
+      <view class="info-item">
+        <text class="info-label">创建时间</text>
+        <text class="info-value">{{orderDetail.createTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{orderDetail.payTime}}">
+        <text class="info-label">支付时间</text>
+        <text class="info-value">{{orderDetail.payTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{orderDetail.shipTime}}">
+        <text class="info-label">发货时间</text>
+        <text class="info-value">{{orderDetail.shipTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{orderDetail.completeTime}}">
+        <text class="info-label">完成时间</text>
+        <text class="info-value">{{orderDetail.completeTime}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">支付方式</text>
+        <text class="info-value">{{orderDetail.payMethod}}</text>
+      </view>
+      <view class="info-item" wx:if="{{orderDetail.remark}}">
+        <text class="info-label">订单备注</text>
+        <text class="info-value">{{orderDetail.remark}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 商品信息 -->
+  <view class="products-section">
+    <view class="section-title">商品信息</view>
+    <view class="section-content">
+      <view class="product-list">
+        <view class="product-item" wx:for="{{orderDetail.products}}" wx:key="id" bindtap="navigateToProduct" data-id="{{item.productId}}">
+          <image src="{{item.image}}" class="product-image" mode="aspectFill"></image>
+          <view class="product-info">
+            <view class="product-name text-ellipsis-2">{{item.name}}</view>
+            <view class="product-spec" wx:if="{{item.specName}}">规格：{{item.specName}}</view>
+            <view class="product-price-quantity">
+              <text class="product-price">¥{{item.price}}</text>
+              <text class="product-quantity">x{{item.quantity}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 金额信息 -->
+  <view class="amount-section">
+    <view class="section-title">金额明细</view>
+    <view class="section-content">
+      <view class="amount-item">
+        <text>商品金额</text>
+        <text>¥{{orderDetail.productAmount}}</text>
+      </view>
+      <view class="amount-item">
+        <text>运费</text>
+        <text>¥{{orderDetail.shippingFee}}</text>
+      </view>
+      <view class="amount-item" wx:if="{{orderDetail.couponAmount > 0}}">
+        <text>优惠券</text>
+        <text class="discount">-¥{{orderDetail.couponAmount}}</text>
+      </view>
+      <view class="amount-total">
+        <text>实付款</text>
+        <text class="total-price">¥{{orderDetail.totalAmount}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 底部操作栏 -->
+  <view class="bottom-actions" wx:if="{{orderDetail.status !== 'cancelled' && orderDetail.status !== 'refunded'}}">
+    <block wx:if="{{orderDetail.status === 'unpaid'}}">
+      <button class="btn-cancel" bindtap="cancelOrder">取消订单</button>
+      <button class="btn-pay" bindtap="payOrder">立即付款</button>
+    </block>
+    <block wx:elif="{{orderDetail.status === 'unshipped'}}">
+      <button class="btn-secondary" bindtap="contactService">联系客服</button>
+    </block>
+    <block wx:elif="{{orderDetail.status === 'shipped'}}">
+      <button class="btn-secondary" bindtap="viewLogistics">查看物流</button>
+      <button class="btn-primary" bindtap="confirmReceive">确认收货</button>
+    </block>
+    <block wx:elif="{{orderDetail.status === 'completed'}}">
+      <button class="btn-secondary" bindtap="buyAgain">再次购买</button>
+      <button class="btn-primary" bindtap="writeReview" wx:if="{{!orderDetail.hasReviewed}}">评价</button>
+    </block>
+  </view>
+</view>

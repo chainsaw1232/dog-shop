@@ -1,0 +1,2 @@
+{"_id":"fav_001","_openid":"user_openid_A","productId":"prod_004","createTime":{"$date":"2025-05-15T10:00:00.000Z"}}
+{"_id":"fav_002","_openid":"user_openid_C","productId":"prod_002","createTime":{"$date":"2025-05-16T12:00:00.000Z"}}

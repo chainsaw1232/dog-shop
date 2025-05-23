@@ -1,0 +1,277 @@
+/* pages/user/index.wxss */
+
+/* 页面整体容器 */
+.user-page {
+  background-color: #f4f4f4; /* 页面背景色 */
+  min-height: 100vh;
+  padding-bottom: 20rpx;
+  box-sizing: border-box;
+}
+
+/* 用户信息卡片 */
+.user-info-card {
+  background-color: #FF8C69; /* 主题橙红色 */
+  padding: 40rpx 30rpx;
+  display: flex;
+  align-items: center;
+  color: white;
+  margin-bottom: 20rpx; /* 与下方卡片间距 */
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid white;
+  margin-right: 30rpx;
+}
+
+.nickname-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.nickname {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.login-button {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1rpx solid white;
+  padding: 5rpx 20rpx;
+  font-size: 24rpx;
+  border-radius: 30rpx;
+  align-self: flex-start; /* 让按钮宽度自适应内容 */
+  margin-top: 8rpx;
+}
+
+/* 通用卡片样式 */
+.section-card {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  margin: 0 20rpx 20rpx; /* 左右边距，下方间距 */
+  padding: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx; /* 标题和内容间距 */
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.section-more {
+  font-size: 26rpx;
+  color: #999999;
+  display: flex;
+  align-items: center;
+}
+
+.arrow {
+  margin-left: 8rpx;
+  color: #cccccc; /* 统一箭头颜色 */
+}
+
+/* 我的订单区域 */
+.order-status-grid {
+  display: flex;
+  justify-content: space-around; /* 均匀分布 */
+  align-items: flex-start; /* 图标和文字顶部对齐 */
+  text-align: center;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column; /* 图标和文字垂直排列 */
+  align-items: center; /* 水平居中 */
+  justify-content: flex-start; /* 修改为顶部对齐，让内容从上往下排 */
+  position: relative; /* 为了角标定位 */
+  width: auto; /* 改为auto，让内容撑开，或设置一个flex:1; */
+  flex: 1; /* 让各项平分空间 */
+  padding: 10rpx 5rpx; /* 调整内边距 */
+}
+
+.status-icon {
+  width: 56rpx; /* 图标大小调整 */
+  height: 56rpx;
+  margin-bottom: 12rpx; /* 图标和文字间距 */
+}
+
+.status-text {
+  font-size: 24rpx;
+  color: #555555;
+  line-height: 1.3; /* 调整行高 */
+}
+
+/* 角标样式 */
+.badge {
+  position: absolute;
+  top: -6rpx; /* 向上偏移一点，根据图标大小调整 */
+  right: 10rpx; /* 向右偏移一点，根据图标大小和item宽度调整 */
+  background-color: #ff4d4f; /* 醒目的红色 */
+  color: white;
+  font-size: 20rpx; /* 角标内数字大小 */
+  padding: 0rpx 8rpx; /* 左右留白，让单个数字也好看 */
+  border-radius: 16rpx; /* 圆角 */
+  min-width: 32rpx; /* 最小宽度 */
+  height: 32rpx;    /* 高度 */
+  line-height: 32rpx; /* 垂直居中数字 */
+  text-align: center;
+  box-sizing: border-box;
+  z-index: 1; /* 确保角标在图标之上 */
+}
+
+
+/* 功能菜单区域 */
+.menu-section {
+  padding: 0; /* 移除内边距，让 menu-item 的 padding 生效 */
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx; /* 统一 item 的上下左右内边距 */
+  border-bottom: 1rpx solid #f0f0f0;
+  position: relative; 
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  width: 44rpx;
+  height: 44rpx;
+  margin-right: 25rpx; /* 图标和文字的间距 */
+}
+
+.menu-text { /* 应用于所有菜单项的文字，包括按钮内的 */
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: normal; /* 确保所有菜单文字都不是粗体，除非特别指定 */
+  flex-grow: 1; 
+}
+
+/* 针对联系客服按钮的特殊处理 */
+.menu-item .contact-button {
+  /* 重置button的默认样式 */
+  background-color: transparent;
+  border: none;
+  padding: 0; 
+  margin: 0;
+  text-align: left; 
+  line-height: normal; 
+  width: 100%; 
+  display: flex; 
+  align-items: center; 
+  flex-grow: 1; 
+  /* 确保按钮内的文字也使用 .menu-text 的样式 */
+  font-size: 28rpx; /* 与 .menu-text 一致 */
+  color: #333333;   /* 与 .menu-text 一致 */
+  font-weight: normal; /* 与 .menu-text 一致 */
+}
+
+.contact-button::after { /* 移除微信小程序button的默认边框 */
+  border: none;
+}
+
+/* 如果WXML中按钮内的文字是 <text class="menu-text">联系客服</text> 结构 */
+/* 那么 .contact-button .menu-text 样式会自动生效 */
+/* 如果文字直接在button内，则 .contact-button 的 font-size, color, font-weight 会直接作用于文字 */
+
+
+.menu-item > .arrow { /* 适用于所有 menu-item 下的直接子元素 arrow */
+  margin-left: auto; /* 将箭头推到最右边 */
+  color: #cccccc;
+  font-size: 26rpx;
+  padding-left: 20rpx; /* 给箭头一些左边距，避免太贴近文字 */
+}
+
+
+/* 为您推荐区域 */
+.recommend-section {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  margin: 0 20rpx 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.products-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; 
+}
+
+.product-card {
+  width: calc(50% - 10rpx); 
+  background-color: #ffffff; 
+  border-radius: 12rpx;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06); 
+  margin-bottom: 20rpx; 
+}
+
+.product-image {
+  width: 100%;
+  height: 320rpx; 
+  background-color: #f0f0f0; 
+}
+
+.product-info {
+  padding: 20rpx; 
+}
+
+.product-name {
+  font-size: 26rpx;
+  color: #333;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 10rpx; 
+  height: calc(26rpx * 1.4 * 2); 
+  line-height: 1.4;
+}
+
+.product-price-row {
+  display: flex;
+  align-items: baseline;
+  margin-top: auto; 
+}
+
+.product-price {
+  font-size: 30rpx;
+  color: #FF8C69; 
+  font-weight: bold;
+  margin-right: 10rpx;
+}
+
+.product-original-price {
+  font-size: 22rpx;
+  color: #999999;
+  text-decoration: line-through;
+}
+
+/* 页面底部 */
+.page-footer {
+  text-align: center;
+  padding: 40rpx 0; 
+  font-size: 24rpx;
+  color: #aaaaaa;
+}
