@@ -1,2 +1,2 @@
 {"_id":"config_brand_info","key":"brandInfo","value":{"title":"汪汪零食铺","description":"只做对狗狗健康有益的零食，用心守护每一只毛孩子。","logoUrl":"cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png","contactPhone":"400-800-1234","contactEmail":"service@wangwanglingshi.com"},"updateTime":{"$date":"2025-04-01T00:00:00.000Z"}}
-{"_id":"config_shipping_rules","key":"shippingRules","value":{"freeShippingThreshold":99.00,"defaultFee":10.00,"supportedRegions":["中国大陆"]},"updateTime":{"$date":"2025-04-01T00:00:00.000Z"}}
+{"_id":"config_shipping_rules","key":"shippingRules","value":{"freeShippingThreshold":99.00,"defaultFee":10.00,"supportedRegions":["中国大陆"]},"updateTime":{"$date":"2025-04-01T00:00:00.000Z"}

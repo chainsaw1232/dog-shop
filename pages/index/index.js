@@ -9,7 +9,7 @@ Page({
     newProducts: [], 
     hotProducts: [], 
     brandInfo: { 
-      title: '汪汪零食铺',
+      title: '火山零食小卖部', // <--- 修改点
       description: '加载中...',
       imageUrl: '' 
     },
@@ -53,7 +53,7 @@ Page({
       newProducts: [],
       hotProducts: [],
       coupons: [],
-      brandInfo: { title: '汪汪零食铺', description: '加载中...', imageUrl: ''},
+      brandInfo: { title: '火山零食小卖部', description: '加载中...', imageUrl: ''}, // <--- 修改点
       isLoading: true, 
       isPageError: false, 
       errorMessage: ''
@@ -93,9 +93,10 @@ Page({
         const coupons = Array.isArray(data.coupons) ? data.coupons : [];
         const newProducts = Array.isArray(data.newProducts) ? data.newProducts : [];
         const hotProducts = Array.isArray(data.hotProducts) ? data.hotProducts : [];
-        const brandInfo = (typeof data.brandInfo === 'object' && data.brandInfo !== null) 
+        // brandInfo 会从云函数获取，如果云函数没有返回，这里的默认值需要修改
+        const brandInfo = (typeof data.brandInfo === 'object' && data.brandInfo !== null && data.brandInfo.title) 
                           ? data.brandInfo 
-                          : { title: '汪汪零食铺', description: '品质保证，爱宠首选', imageUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png' }; 
+                          : { title: '火山零食小卖部', description: '品质保证，爱宠首选', imageUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png' };  // <--- 修改点 (备用标题)
         
         banners.forEach((b, i) => { if (!b.imageUrl) console.warn(`Banner ${i} 缺少 imageUrl:`, b); });
         categories.forEach((c, i) => { if (!c.iconUrl) console.warn(`Category ${i} 缺少 iconUrl:`, c); });
@@ -193,11 +194,6 @@ Page({
     if (item.linkType === 'product' && item.linkId) {
       wx.navigateTo({ url: `/pages/detail/index?id=${item.linkId}` });
     } else if (item.linkType === 'category' && item.linkId) {
-      // **如果 category 也是 TabBar 页，这里也需要改成 switchTab**
-      // **并使用 app.globalData 传递 categoryId**
-      // app.globalData.targetCategoryId = item.linkId;
-      // wx.switchTab({ url: `/pages/category/index` });
-      // **如果 category 不是 TabBar 页，则 navigateTo 可以保留**
       wx.navigateTo({ url: `/pages/category/index?id=${item.linkId}` });
     } else if (item.linkType === 'webview' && item.linkUrl) {
       console.log('WebView link tapped, URL:', item.linkUrl);
@@ -211,14 +207,6 @@ Page({
     const categoryId = e.currentTarget.dataset.id;
     console.log('Category tapped, ID:', categoryId); 
     if (categoryId) {
-      // **如果 category 是 TabBar 页，这里也需要改成 switchTab**
-      // **并使用 app.globalData 传递 categoryId**
-      // app.globalData.targetCategoryId = categoryId;
-      // wx.switchTab({ 
-      //   url: `/pages/category/index`,
-      //   fail: (err) => { console.error('SwitchTab to category failed:', err); }
-      // });
-      // **如果 category 不是 TabBar 页，则 navigateTo 可以保留**
        wx.navigateTo({ url: `/pages/category/index?id=${categoryId}` });
     }
   },
@@ -252,16 +240,14 @@ Page({
 
   onMoreNewProductTap: function() {
     console.log('Attempting to navigate to New Products via TabBar...');
-    app.globalData.categoryPageFilter = { type: 'new' }; // 存入全局数据
+    app.globalData.categoryPageFilter = { type: 'new' }; 
     wx.switchTab({
-      url: '/pages/category/index', // TabBar路径不需要参数
+      url: '/pages/category/index', 
       success: function(res) {
         console.log('Successfully switched to Category Tab for New Products:', res);
       },
       fail: function(err) {
         console.error('Failed to switch to Category Tab for New Products:', err);
-        // 如果 switchTab 失败，可能是路径不对或 app.json 配置问题
-        // 清理一下全局数据，避免影响下次
         delete app.globalData.categoryPageFilter; 
         wx.showToast({ title: '无法打开分类页面', icon: 'none' });
       }
@@ -270,9 +256,9 @@ Page({
 
   onMoreHotProductTap: function() {
     console.log('Attempting to navigate to Hot Products via TabBar...');
-    app.globalData.categoryPageFilter = { type: 'hot' }; // 存入全局数据
+    app.globalData.categoryPageFilter = { type: 'hot' }; 
     wx.switchTab({
-      url: '/pages/category/index', // TabBar路径不需要参数
+      url: '/pages/category/index', 
       success: function(res) {
         console.log('Successfully switched to Category Tab for Hot Products:', res);
       },
