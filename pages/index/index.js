@@ -3,24 +3,24 @@ const app = getApp();
 
 Page({
   data: {
-    banners: [], 
-    categories: [], 
-    coupons: [], 
-    newProducts: [], 
-    hotProducts: [], 
-    brandInfo: { 
-      title: '火山零食小卖部', // <--- 修改点
+    banners: [],
+    categories: [],
+    coupons: [],
+    newProducts: [],
+    hotProducts: [],
+    brandInfo: {
+      title: '火山零食小卖部', // 默认店铺名称
       description: '加载中...',
-      imageUrl: '' 
+      imageUrl: '' // 默认logo，建议在云函数中提供一个真实存在的默认路径
     },
-    isLoading: true, 
-    isPageError: false, 
-    errorMessage: '',   
-    isHotProductsLoading: false, 
-    isHotProductsEnd: false, 
-    hotProductsPage: 1, 
-    hotProductsPageSize: 6, 
-    lastInteractionTime: Date.now()
+    isLoading: true,
+    isPageError: false,
+    errorMessage: '',
+    isHotProductsLoading: false,
+    isHotProductsEnd: false,
+    hotProductsPage: 1,
+    hotProductsPageSize: 6, // 保持与wxml中一致或根据实际情况调整
+    lastInteractionTime: Date.now() // 用于页面状态管理
   },
 
   onLoad: function(options) {
@@ -33,11 +33,14 @@ Page({
     this.setData({
       lastInteractionTime: Date.now()
     });
-    if (app.globalData.openid) {
-      app.getCartCount(); 
+    // 检查购物车数量
+    if (app.globalData.openid && typeof app.getCartCount === 'function') {
+      app.getCartCount();
     }
+    // 如果页面数据显示为空，并且当前不处于加载中或错误状态，则可以考虑重新加载
+    // 但更常见的做法是在onLoad或onPullDownRefresh中加载核心数据
     if (this.data.banners.length === 0 && !this.data.isLoading && !this.data.isPageError) {
-      console.log('Page showed with no data and not loading, refetching home data.');
+      console.log('Index page showed with no data and not loading/error, refetching home data.');
       this.fetchHomePageData();
     }
   },
@@ -46,19 +49,20 @@ Page({
     console.log('首页下拉刷新...');
     this.setData({
       lastInteractionTime: Date.now(),
-      hotProductsPage: 1, 
+      hotProductsPage: 1,
       isHotProductsEnd: false,
-      banners: [], 
+      // 清空现有数据以便重新加载
+      banners: [],
       categories: [],
       newProducts: [],
       hotProducts: [],
       coupons: [],
-      brandInfo: { title: '火山零食小卖部', description: '加载中...', imageUrl: ''}, // <--- 修改点
-      isLoading: true, 
-      isPageError: false, 
+      brandInfo: { title: '火山零食小卖部', description: '加载中...', imageUrl: '' },
+      isLoading: true,
+      isPageError: false,
       errorMessage: ''
     });
-    this.fetchHomePageData(); 
+    this.fetchHomePageData();
   },
 
   onReachBottom: function() {
@@ -73,52 +77,39 @@ Page({
     }
   },
 
+  // 获取首页核心数据
   fetchHomePageData: function() {
     console.log('fetchHomePageData 开始执行...');
     this.setData({ isLoading: true, isPageError: false, errorMessage: '' });
     wx.cloud.callFunction({
-      name: 'getHomeData', 
+      name: 'getHomeData',
       data: {
-        pageSize: this.data.hotProductsPageSize 
+        pageSize: this.data.hotProductsPageSize
       }
     })
     .then(res => {
-      console.log('[pages/index.js] getHomeData 云函数完整返回: ', JSON.stringify(res)); 
+      console.log('[pages/index.js] getHomeData 云函数完整返回: ', JSON.stringify(res));
       if (res.result && res.result.code === 0 && res.result.data) {
         const data = res.result.data;
-        console.log('[pages/index.js] 云函数成功返回数据: ', JSON.stringify(data));
-
-        const banners = Array.isArray(data.banners) ? data.banners : [];
-        const categories = Array.isArray(data.categories) ? data.categories : [];
-        const coupons = Array.isArray(data.coupons) ? data.coupons : [];
-        const newProducts = Array.isArray(data.newProducts) ? data.newProducts : [];
-        const hotProducts = Array.isArray(data.hotProducts) ? data.hotProducts : [];
-        // brandInfo 会从云函数获取，如果云函数没有返回，这里的默认值需要修改
-        const brandInfo = (typeof data.brandInfo === 'object' && data.brandInfo !== null && data.brandInfo.title) 
-                          ? data.brandInfo 
-                          : { title: '火山零食小卖部', description: '品质保证，爱宠首选', imageUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png' };  // <--- 修改点 (备用标题)
-        
-        banners.forEach((b, i) => { if (!b.imageUrl) console.warn(`Banner ${i} 缺少 imageUrl:`, b); });
-        categories.forEach((c, i) => { if (!c.iconUrl) console.warn(`Category ${i} 缺少 iconUrl:`, c); });
-        newProducts.forEach((p, i) => { if (!p.mainImage) console.warn(`NewProduct ${i} 缺少 mainImage:`, p); });
-        hotProducts.forEach((p, i) => { if (!p.mainImage) console.warn(`HotProduct ${i} 缺少 mainImage:`, p); });
-        if (brandInfo && !brandInfo.imageUrl) console.warn('BrandInfo 缺少 imageUrl:', brandInfo);
+        const defaultBrandInfo = { 
+          title: '火山零食小卖部', 
+          description: '品质保证，爱宠首选', 
+          imageUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png' // 确保此路径有效
+        };
 
         this.setData({
-          banners: banners,
-          categories: categories,
-          coupons: coupons, 
-          newProducts: newProducts,
-          hotProducts: hotProducts, 
-          brandInfo: brandInfo, 
-          hotProductsPage: 1, 
-          isHotProductsEnd: hotProducts.length < this.data.hotProductsPageSize, 
+          banners: Array.isArray(data.banners) ? data.banners : [],
+          categories: Array.isArray(data.categories) ? data.categories : [],
+          coupons: Array.isArray(data.coupons) ? data.coupons : [],
+          newProducts: Array.isArray(data.newProducts) ? data.newProducts : [],
+          hotProducts: Array.isArray(data.hotProducts) ? data.hotProducts : [],
+          brandInfo: (data.brandInfo && data.brandInfo.title) ? data.brandInfo : defaultBrandInfo,
+          hotProductsPage: 1,
+          isHotProductsEnd: (Array.isArray(data.hotProducts) ? data.hotProducts.length : 0) < this.data.hotProductsPageSize,
           isLoading: false
         });
-        console.log('[pages/index.js] setData 完成，当前data keys:', Object.keys(this.data));
       } else {
         const errMsg = (res.result && res.result.message) ? res.result.message : '获取首页数据失败';
-        console.error('[pages/index.js] getHomeData 返回错误或数据问题: ', errMsg, '完整result:', JSON.stringify(res.result));
         this.showError(errMsg);
         this.setData({ isLoading: false, isPageError: true, errorMessage: errMsg });
       }
@@ -133,52 +124,39 @@ Page({
       wx.stopPullDownRefresh();
     });
   },
-  
+
+  // 加载更多热销商品
   loadMoreHotProducts: function() {
-    if (this.data.isHotProductsEnd || this.data.isHotProductsLoading) {
-      return;
-    }
+    if (this.data.isHotProductsEnd || this.data.isHotProductsLoading) return;
     this.setData({ isHotProductsLoading: true });
     const nextPage = this.data.hotProductsPage + 1;
 
-    console.log(`[pages/index.js] 调用 getProducts (for hot) - action: list, isHot: true, page: ${nextPage}`);
     wx.cloud.callFunction({
-      name: 'getProducts', 
+      name: 'getProducts',
       data: {
-        action: 'list', 
-        isHot: true,    
+        action: 'list',
+        isHot: true,
         page: nextPage,
         pageSize: this.data.hotProductsPageSize
       }
     })
     .then(res => {
-      console.log('[pages/index.js] getProducts (for hot) 云函数返回: ', JSON.stringify(res));
       if (res.result && res.result.code === 0 && res.result.data && Array.isArray(res.result.data.list)) {
         const moreProducts = res.result.data.list;
-        moreProducts.forEach((p,i) => { if (!p.mainImage) console.warn(`More HotProduct ${i} 缺少 mainImage:`, p); });
         this.setData({
-          hotProducts: this.data.hotProducts.concat(moreProducts), 
+          hotProducts: this.data.hotProducts.concat(moreProducts),
           hotProductsPage: nextPage,
-          isHotProductsEnd: moreProducts.length < this.data.hotProductsPageSize, 
+          isHotProductsEnd: moreProducts.length < this.data.hotProductsPageSize,
         });
       } else {
-        this.setData({ isHotProductsEnd: true }); 
-        if (res.result && res.result.message && res.result.code !== 0) {
-             this.showError(res.result.message); 
-        } else if (res.result && res.result.code === 0 && (!res.result.data || !res.result.data.list || res.result.data.list.length === 0)){
-            console.log('没有更多热销商品了。');
-        } else {
-            console.log('加载更多热销商品时返回未知结构或错误:', res.result);
-            if (res.result && res.result.message) {
-                this.showError(res.result.message);
-            }
-        }
+        this.setData({ isHotProductsEnd: true });
+        if (res.result && res.result.message && res.result.code !== 0) this.showError(res.result.message);
       }
     })
     .catch(err => {
       this.showError('加载更多商品失败');
       console.error("[pages/index.js] 调用 getProducts (for hot) 云函数失败: ", err);
-      this.setData({ isHotProductsEnd: true }); 
+      this.setData({ isHotProductsEnd: true });
     })
     .finally(() => {
       this.setData({ isHotProductsLoading: false });
@@ -188,51 +166,65 @@ Page({
   // --- 事件处理函数 ---
   onBannerTap: function(e) {
     const item = e.currentTarget.dataset.item;
-    console.log('Banner tapped:', item); 
+    console.log('Banner tapped:', item);
     if (!item) return;
-
     if (item.linkType === 'product' && item.linkId) {
       wx.navigateTo({ url: `/pages/detail/index?id=${item.linkId}` });
     } else if (item.linkType === 'category' && item.linkId) {
-      wx.navigateTo({ url: `/pages/category/index?id=${item.linkId}` });
+      app.globalData.categoryPageFilter = { categoryId: item.linkId };
+      wx.switchTab({
+        url: '/pages/category/index',
+        fail: () => { delete app.globalData.categoryPageFilter; }
+      });
     } else if (item.linkType === 'webview' && item.linkUrl) {
-      console.log('WebView link tapped, URL:', item.linkUrl);
-      wx.showToast({ title: '暂不支持打开外部链接', icon: 'none'});
-    } else {
-      console.log('未处理的Banner链接类型或参数缺失:', item);
+      // wx.navigateTo({ url: `/pages/webview/index?url=${encodeURIComponent(item.linkUrl)}` });
+      wx.showToast({ title: '暂不支持打开外部链接', icon: 'none' });
     }
   },
 
   onCategoryTap: function(e) {
-    const categoryId = e.currentTarget.dataset.id;
-    console.log('Category tapped, ID:', categoryId); 
+    const categoryId = e.currentTarget.dataset.id; // 这个ID现在应该是 item._id (字符串)
+    console.log('Category tapped, ID:', categoryId, 'Type:', typeof categoryId);
     if (categoryId) {
-       wx.navigateTo({ url: `/pages/category/index?id=${categoryId}` });
+      // **关键检查点**：
+      // 确保 categoryId 是字符串类型，并且是分类的 _id (例如 "cat_01")
+      // 而不是数字类型的 id (例如 1)
+      app.globalData.categoryPageFilter = { 
+        categoryId: categoryId 
+      };
+      wx.switchTab({
+        url: '/pages/category/index',
+        success: function(res) {
+          console.log('Successfully switched to Category Tab for categoryId:', categoryId);
+        },
+        fail: function(err) {
+          console.error('Failed to switch to Category Tab:', err);
+          delete app.globalData.categoryPageFilter;
+          wx.showToast({ title: '无法打开分类页面', icon: 'none' });
+        }
+      });
+    } else {
+      console.warn('Category tap missing ID or ID is invalid:', e.currentTarget.dataset);
+      wx.showToast({ title: '无效的分类选择', icon: 'none' });
     }
   },
 
   onCouponTap: function(e) {
-    const couponId = e.currentTarget.dataset.id; 
-    console.log('Coupon tapped, ID:', couponId); 
-    wx.navigateTo({
-      url: '/pages/coupon/index' 
-    });
+    const couponId = e.currentTarget.dataset.id;
+    console.log('Coupon tapped, ID:', couponId);
+    wx.navigateTo({ url: '/pages/coupon/index' }); // 跳转到优惠券列表页
   },
 
   onMoreCouponTap: function() {
-    console.log('More coupons tapped'); 
-    wx.navigateTo({
-      url: '/pages/coupon/index'
-    });
+    console.log('More coupons tapped');
+    wx.navigateTo({ url: '/pages/coupon/index' });
   },
 
   onProductTap: function(e) {
     const productId = e.currentTarget.dataset.id;
-    console.log('Product tapped, ID:', productId); 
+    console.log('Product tapped, ID:', productId);
     if (productId) {
-      wx.navigateTo({
-        url: `/pages/detail/index?id=${productId}`
-      });
+      wx.navigateTo({ url: `/pages/detail/index?id=${productId}` });
     } else {
       console.warn('Product tap missing ID:', e.currentTarget.dataset);
     }
@@ -240,57 +232,27 @@ Page({
 
   onMoreNewProductTap: function() {
     console.log('Attempting to navigate to New Products via TabBar...');
-    app.globalData.categoryPageFilter = { type: 'new' }; 
+    app.globalData.categoryPageFilter = { type: 'new' };
     wx.switchTab({
-      url: '/pages/category/index', 
-      success: function(res) {
-        console.log('Successfully switched to Category Tab for New Products:', res);
-      },
-      fail: function(err) {
-        console.error('Failed to switch to Category Tab for New Products:', err);
-        delete app.globalData.categoryPageFilter; 
-        wx.showToast({ title: '无法打开分类页面', icon: 'none' });
-      }
+      url: '/pages/category/index',
+      fail: () => { delete app.globalData.categoryPageFilter; }
     });
   },
 
   onMoreHotProductTap: function() {
     console.log('Attempting to navigate to Hot Products via TabBar...');
-    app.globalData.categoryPageFilter = { type: 'hot' }; 
+    app.globalData.categoryPageFilter = { type: 'hot' };
     wx.switchTab({
-      url: '/pages/category/index', 
-      success: function(res) {
-        console.log('Successfully switched to Category Tab for Hot Products:', res);
-      },
-      fail: function(err) {
-        console.error('Failed to switch to Category Tab for Hot Products:', err);
-        delete app.globalData.categoryPageFilter;
-        wx.showToast({ title: '无法打开分类页面', icon: 'none' });
-      }
+      url: '/pages/category/index',
+      fail: () => { delete app.globalData.categoryPageFilter; }
     });
   },
 
   onBrandTap: function() {
-    console.log('Brand section tapped'); 
-    wx.navigateTo({
-      url: '/pages/about/index' 
-    });
+    console.log('Brand section tapped');
+    wx.navigateTo({ url: '/pages/about/index' });
   },
-  
-  showLoginModal: function() {
-    wx.showModal({
-      title: '提示',
-      content: '请先登录后再操作',
-      confirmText: '去登录',
-      success: res => {
-        if (res.confirm) {
-          wx.switchTab({
-            url: '/pages/user/index'
-          });
-        }
-      }
-    });
-  },
+
   showError: function(message) {
     wx.showToast({
       title: message || '发生未知错误',
@@ -298,4 +260,4 @@ Page({
       duration: 2500
     });
   }
-})
+});
