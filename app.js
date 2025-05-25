@@ -4,13 +4,15 @@ App({
     userInfo: null,
     openid: null,
     cartCount: 0,
-    cloudEnvId: 'cloud1-2gz5tcgibdf4bfc0', // 你的云环境ID
-    // loginPromise: null, // 用于确保登录完成后再执行其他操作
+    cloudEnvId: 'cloud1-2gz5tcgibdf4bfc0', // 您的云环境ID
+    loginChecked: false, // 新增：标记登录流程是否已检查完毕
+    isLoggedIn: false,   // 新增：标记用户是否已成功获取openid (视为基础登录成功)
+    // loginPromise: null, // 可以移除或保留，当前逻辑未使用
+    // baseUrl: 'https://your-actual-base-url.com' // <--- 这行已经被移除了
   },
 
   onLaunch: function() {
     console.log('App.js: onLaunch started.');
-    // 初始化云开发环境
     if (!wx.cloud) {
       console.error('请使用 2.2.3 或以上的基础库以使用云能力');
     } else {
@@ -20,40 +22,36 @@ App({
       });
       console.log('云开发环境初始化成功，环境ID：', this.globalData.cloudEnvId);
     }
-
-    // 尝试登录并获取 OpenID
     this.performLoginSequence();
   },
 
-  // 执行完整的登录和初始化序列
   performLoginSequence: function() {
     console.log('App.js: Starting performLoginSequence...');
-    // this.globalData.loginPromise = // 这行可以去掉，直接用 then/catch
     this.cloudLoginAndGetOpenid()
-      .then(openid => { // cloudLoginAndGetOpenid 成功时会 resolve openid
+      .then(openid => {
         console.log('App.js: performLoginSequence - cloudLoginAndGetOpenid SUCCESS, openid:', openid);
-        // OpenID 获取成功后，可以进行后续操作
-        this.tryGetUserProfileAndSync(); // 尝试获取用户信息并同步
-        this.getCartCount();          // 获取购物车数量
-        // TODO: 在这里可以触发一个全局事件，通知其他页面登录已完成
-        // wx.eventBus.emit('loggedIn');
+        this.globalData.isLoggedIn = true; // 获取到openid视为基础登录成功
+        // OpenID 获取成功后，可以尝试获取已授权的用户信息
+        this.tryGetCachedUserProfile(); // 尝试从缓存加载用户信息
+        this.getCartCount();
+        // 通知页面登录状态已检查完毕
+        this.globalData.loginChecked = true;
+        this.notifyPagesLoginStatusUpdate();
       })
       .catch(err => {
         console.error('App.js: performLoginSequence - cloudLoginAndGetOpenid FAILED:', err);
-        // 登录失败或获取 OpenID 失败，设置默认状态
-        this.setDefaultUserAndCartState();
-        // TODO: 在这里可以触发一个全局事件，通知其他页面登录失败
-        // wx.eventBus.emit('loginFailed');
+        this.setDefaultUserAndCartState(); // 登录失败，设置默认状态
+        this.globalData.loginChecked = true; // 同样标记检查完毕
+        this.notifyPagesLoginStatusUpdate();
       });
   },
 
-  // 调用 login 云函数获取 OpenID
   cloudLoginAndGetOpenid: function() {
     console.log('App.js: Attempting cloudLoginAndGetOpenid...');
     return new Promise((resolve, reject) => {
       wx.cloud.callFunction({
-        name: 'login', // 确保云函数名称正确
-        data: {} // login 云函数通常不需要前端传递 data
+        name: 'login',
+        data: {}
       })
       .then(res => {
         console.log('App.js: cloudLoginAndGetOpenid - wx.cloud.callFunction response:', JSON.stringify(res));
@@ -61,11 +59,11 @@ App({
           const openid = res.result.data.openid;
           console.log('[云函数 login] 返回的 openid: ', openid);
           this.globalData.openid = openid;
-          wx.setStorageSync('openid', openid);
+          wx.setStorageSync('openid', openid); // 将 openid 存入本地缓存
           console.log('App.js: globalData.openid SET to:', this.globalData.openid);
-          resolve(openid); // 成功时 resolve openid
+          resolve(openid);
         } else {
-          const errMsg = (res.result && res.result.message) ? res.result.message : '获取 openid 失败 - 云函数返回异常或数据结构不符';
+          const errMsg = (res.result && res.result.message) ? res.result.message : '获取 openid 失败 - 云函数返回异常';
           console.error('[云函数 login] 获取 openid 失败, result:', JSON.stringify(res.result));
           this.globalData.openid = null;
           wx.removeStorageSync('openid');
@@ -76,127 +74,112 @@ App({
         console.error('[云函数 login] 调用失败 (wx.cloud.callFunction catch):', JSON.stringify(err));
         this.globalData.openid = null;
         wx.removeStorageSync('openid');
-        reject(err); // 将云函数调用本身的错误也 reject 出去
+        reject(err);
       });
     });
   },
 
-  // 尝试获取用户信息并同步（应在 openid 获取成功后调用）
-  tryGetUserProfileAndSync: function() {
-    // 注意：wx.getUserProfile 必须由用户主动触发（如点击按钮）。
-    // 在 onLaunch 中直接调用通常是为了静默获取已授权信息或引导用户授权。
-    // 如果是首次登录或用户未授权，这里会失败，属于正常现象。
-    // 更好的做法是在个人中心页等地方引导用户点击按钮来触发此操作。
-    console.log('App.js: Attempting tryGetUserProfileAndSync. Current openid:', this.globalData.openid);
-    if (!this.globalData.openid) {
-        console.warn("App.js: tryGetUserProfileAndSync - openid not available, skipping user profile fetch.");
-        this.setDefaultUserAndCartState(); // 确保有默认用户信息
-        return;
-    }
+  // 新增：尝试从缓存加载用户信息
+  tryGetCachedUserProfile: function() {
+    if (!this.globalData.openid) return; // 必须在有openid的前提下
 
-    // 尝试从缓存读取用户信息，如果存在，可以先用着，再尝试更新
     const cachedUserInfo = wx.getStorageSync('userInfo');
-    if (cachedUserInfo) {
-        this.globalData.userInfo = cachedUserInfo;
-        console.log('App.js: Loaded userInfo from cache:', cachedUserInfo);
+    if (cachedUserInfo && cachedUserInfo.nickName !== '汪汪用户') { // 简单判断非默认值
+      this.globalData.userInfo = cachedUserInfo;
+      console.log('App.js: Loaded userInfo from cache:', cachedUserInfo);
+      // 如果需要，可以在这里再次通知页面更新，但通常 performLoginSequence 结束后的通知已足够
+      // this.notifyPagesUserUpdate(); // 如果有专门处理用户资料更新的通知
     } else {
-        this.setDefaultUserAndCartState(); // 设置默认用户信息
-    }
-
-    // wx.getUserProfile 推荐由用户点击触发，这里仅为示例，可能无法在onLaunch中直接成功弹窗
-    // 如果你希望在 onLaunch 中尝试获取（可能失败），可以保留。
-    // 否则，应将此逻辑移至用户手动触发的事件中。
-    wx.getUserProfile({
-      desc: '用于完善会员资料及个性化服务', // 声明获取用户个人信息后的用途，后续会展示在弹窗中，请谨慎填写
-      success: (res) => {
-        console.log('App.js: wx.getUserProfile SUCCESS:', res.userInfo);
-        this.setUserInfoAndSyncToCloud(res.userInfo);
-        // 可以通知页面更新用户信息
-        this.notifyPagesUserUpdate();
-      },
-      fail: (err) => {
-        console.log('App.js: wx.getUserProfile FAILED or user denied:', err);
-        // 用户拒绝或API失败，确保 globalData.userInfo 有默认值
-        if (!this.globalData.userInfo) { // 避免覆盖已有的（比如从缓存加载的）
-            this.setDefaultUserAndCartState();
-        }
+      // 缓存中没有有效用户信息，等待用户在个人中心页主动授权
+      console.log('App.js: No valid userInfo in cache. Waiting for user to authorize on profile page.');
+      // 确保如果缓存是默认值，globalData 也不是默认值
+      if (!this.globalData.userInfo || this.globalData.userInfo.nickName === '汪汪用户') {
+          this.setDefaultUserAndCartState(false); // 只设置用户，不重置登录状态
       }
-    });
+    }
   },
 
-  // 设置并同步用户信息到云端
-  setUserInfoAndSyncToCloud: function(userInfo) {
+  // 用户信息设置与同步到云端 (由页面调用)
+  setUserInfoAndSyncToCloud: function(userInfo, callback) {
     console.log('App.js: Setting and syncing userInfo:', userInfo);
+    if (!userInfo || !userInfo.nickName) {
+        console.warn('App.js: setUserInfoAndSyncToCloud - Invalid userInfo provided.');
+        if (callback) callback(new Error('无效的用户信息'));
+        return;
+    }
     this.globalData.userInfo = userInfo;
     wx.setStorageSync('userInfo', userInfo);
 
     if (this.globalData.openid) {
       console.log('App.js: Attempting to update user info to cloud with openid:', this.globalData.openid);
       wx.cloud.callFunction({
-        name: 'updateUser', // 确保云函数名称正确
+        name: 'updateUser',
         data: {
-          // openid 会在云函数端通过 getWXContext 自动获取，这里传递需要更新的字段
           nickName: userInfo.nickName,
           avatarUrl: userInfo.avatarUrl,
           gender: userInfo.gender,
           country: userInfo.country,
           province: userInfo.province,
           city: userInfo.city
+          // openid 会自动通过云函数上下文传递
         }
       })
       .then(res => {
         if (res.result && res.result.code === 0) {
           console.log('[云函数 updateUser] 用户信息同步成功');
+          if (callback) callback(null, res.result.data);
         } else {
-          console.error('[云函数 updateUser] 用户信息同步失败:', res.result ? res.result.message : '无详细错误信息');
+          const errMsg = res.result ? res.result.message : '用户信息同步失败';
+          console.error('[云函数 updateUser] 用户信息同步失败:', errMsg);
+          if (callback) callback(new Error(errMsg));
         }
       })
       .catch(err => {
         console.error('[云函数 updateUser] 调用失败:', err);
+        if (callback) callback(err);
       });
     } else {
-      console.warn('App.js: setUserInfoAndSyncToCloud - openid is null, cannot sync user info to cloud.');
+      const errMsg = 'OpenID 不可用，无法同步用户信息到云端';
+      console.warn('App.js: setUserInfoAndSyncToCloud -', errMsg);
+      if (callback) callback(new Error(errMsg));
     }
   },
 
-  // 获取购物车数量
   getCartCount: function() {
     if (!this.globalData.openid) {
-      console.warn('App.js: getCartCount - openid is null, cannot fetch cart count.');
-      this.updateCartBadge(0); // 清空角标
+      // console.warn('App.js: getCartCount - openid is null, cannot fetch cart count.');
+      this.updateCartBadge(0);
       return;
     }
-
-    console.log('App.js: Attempting to get cart count from cloud for openid:', this.globalData.openid);
+    // console.log('App.js: Attempting to get cart count from cloud for openid:', this.globalData.openid);
     wx.cloud.callFunction({
-      name: 'cart', // 确保云函数名称正确
+      name: 'cart', // 假设你的购物车云函数名为 'cart'
       data: {
-        action: 'count'
-        // openid 会在云函数端自动获取
+        action: 'count' // 假设 'count' action 用于获取数量
+        // openid 会自动通过云函数上下文传递
       }
     })
     .then(res => {
       if (res.result && res.result.code === 0 && typeof res.result.data.count !== 'undefined') {
         const count = res.result.data.count;
-        console.log('[云函数 cart_count] 购物车数量: ', count);
+        // console.log('[云函数 cart_count] 购物车数量: ', count);
         this.updateCartBadge(count);
       } else {
-        console.error('[云函数 cart_count] 获取购物车数量失败:', res.result ? res.result.message : '无详细信息');
+        // console.error('[云函数 cart_count] 获取购物车数量失败:', res.result ? res.result.message : '无详细信息');
         this.updateCartBadge(0);
       }
     })
     .catch(err => {
-      console.error('[云函数 cart_count] 调用失败:', err);
+      // console.error('[云函数 cart_count] 调用失败:', err);
       this.updateCartBadge(0);
     });
   },
 
-  // 更新购物车角标的辅助函数
   updateCartBadge: function(count) {
     this.globalData.cartCount = count;
     if (count > 0) {
       wx.setTabBarBadge({
-        index: 2, // 购物车的tabBar索引，请根据你的app.json确认，通常是2 (0首页, 1分类, 2购物车, 3我的)
+        index: 2, // 假设购物车在 tabBar 的第3个位置 (索引从0开始)
         text: String(count)
       });
     } else {
@@ -206,43 +189,89 @@ App({
     }
   },
 
-  // 设置默认的用户和购物车状态（通常在登录失败或未登录时调用）
-  setDefaultUserAndCartState: function() {
-    console.log('App.js: Setting default user and cart state.');
+  setDefaultUserAndCartState: function(resetLoginStatus = true) {
+    console.log('App.js: Setting default user and cart state. Reset login status:', resetLoginStatus);
     const defaultUserInfo = {
-      nickName: '汪汪用户',
-      avatarUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/avatar/default_avatar.png' // 确保这个路径是正确的
+      nickName: '汪汪用户', // 和你的wxml中默认显示一致
+      avatarUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/avatar/default_avatar.png' // 默认头像路径
     };
+    // 只有当 globalData.userInfo 不存在，或者还是初始的“汪汪用户”时，才用默认值覆盖
+    // 避免已从缓存加载的有效 userInfo 被意外重置
     if (!this.globalData.userInfo || this.globalData.userInfo.nickName === '汪汪用户') {
         this.globalData.userInfo = defaultUserInfo;
-        wx.setStorageSync('userInfo', defaultUserInfo);
+        // wx.setStorageSync('userInfo', defaultUserInfo); // 仅在用户主动授权后才更新缓存
+    }
+    if (resetLoginStatus) {
+        this.globalData.isLoggedIn = false;
+        this.globalData.openid = null; // 确保 openid 也清空
+        wx.removeStorageSync('openid');
+        wx.removeStorageSync('userInfo'); // 如果登录失败，也清除用户信息缓存
     }
     this.updateCartBadge(0);
   },
 
-  // 检查登录状态（主要给页面使用）
-  checkLogin: function() {
-    // 这个函数现在更多的是检查 globalData.openid 是否已存在
-    // 真正的登录流程由 onLaunch 触发
-    if (this.globalData.openid) {
-      // 如果需要，可以从缓存恢复 userInfo，但更推荐 userInfo 的管理也通过 globalData
-      // const userInfo = wx.getStorageSync('userInfo');
-      // if (userInfo && !this.globalData.userInfo) {
-      //   this.globalData.userInfo = userInfo;
-      // }
-      return true;
-    }
-    return false;
+  checkLogin: function() { // 这个函数现在主要用于页面判断是否已获取openid
+    return !!this.globalData.openid && this.globalData.isLoggedIn;
   },
 
-  // 辅助函数：通知页面用户状态已更新（可选）
+  // 新增：通知页面登录状态已更新 (例如，从 Page.onLoad 调用以等待登录检查完成)
+  listenLoginStatusUpdate: function(pageInstance, callback) {
+    if (this.globalData.loginChecked) {
+      // 如果登录检查已完成，立即回调
+      callback(this.globalData.isLoggedIn, this.globalData.userInfo);
+    } else {
+      // 如果登录流程尚未完成，将回调存储起来，待完成后执行
+      if (!this.loginStatusUpdateCallbacks) {
+        this.loginStatusUpdateCallbacks = [];
+      }
+      this.loginStatusUpdateCallbacks.push({ page: pageInstance, cb: callback });
+    }
+  },
+
+  // 新增：当登录状态检查完毕后，通知所有监听的页面
+  notifyPagesLoginStatusUpdate: function() {
+    if (this.loginStatusUpdateCallbacks && this.loginStatusUpdateCallbacks.length > 0) {
+      this.loginStatusUpdateCallbacks.forEach(item => {
+        // 确保页面实例仍然存在 (防止页面已销毁)
+        if (item.page && typeof item.cb === 'function') {
+          try {
+            item.cb(this.globalData.isLoggedIn, this.globalData.userInfo);
+          } catch (e) {
+            console.error("Error in login status update callback for page:", item.page, e);
+          }
+        }
+      });
+      this.loginStatusUpdateCallbacks = []; // 清空回调
+    }
+    // 也可以通过 wx.eventBus (如果引入了的话) 或其他方式通知
+    // 例如，触发一个全局自定义事件
+    wx.switchTab({ // 尝试触发一次tab页的onShow，让它们也能感知到变化
+        url: '/pages/index/index', // 切换到首页，通常会触发首页的onShow
+        complete: () => {
+            // 尝试切换回之前的页面，如果不是首页的话
+            // 这个逻辑比较复杂，因为 switchTab 后 getCurrentPages 的行为可能不符合预期
+            // 简单起见，可以只切换到首页，让用户自行导航
+            // 或者，如果知道当前是哪个tab，可以尝试切回去，但要小心死循环
+            const currentPage = getCurrentPages().pop();
+            if (currentPage && currentPage.route !== 'pages/index/index') {
+                // 如果当前页不是首页，并且是tab页，可以尝试切回去
+                // 不过这个逻辑有点复杂，暂时简化
+                // console.log('Attempting to switch back to:', currentPage.route);
+                // wx.switchTab({ url: `/${currentPage.route}` });
+            }
+        }
+    });
+  },
+
+  // 辅助函数：通知特定页面用户资料已更新（例如，个人中心页）
   notifyPagesUserUpdate: function() {
     const pages = getCurrentPages();
     if (pages.length > 0) {
-      const currentPage = pages[pages.length - 1];
-      if (currentPage && typeof currentPage.onUserLoginOrProfileUpdate === 'function') {
-        currentPage.onUserLoginOrProfileUpdate();
-      }
+      pages.forEach(page => {
+        if (page && typeof page.onUserLoginOrProfileUpdate === 'function') {
+          page.onUserLoginOrProfileUpdate();
+        }
+      });
     }
   }
 })

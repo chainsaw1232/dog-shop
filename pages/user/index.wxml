@@ -9,7 +9,7 @@
     <view class="section-header">
       <text class="section-title">我的订单</text>
       <view class="all-orders" bindtap="navigateToOrderList" data-type="all">
-        全部订单 <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+        全部订单 <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/全部订单.png"></image>
       </view>
     </view>
     <view class="order-status-grid">
@@ -43,27 +43,27 @@
     <view class="menu-item" bindtap="navigateToAddress">
       <image class="menu-icon" src="{{menuIcons.address}}"></image>
       <text class="menu-text">收货地址</text>
-      <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="navigateToCoupon">
       <image class="menu-icon" src="{{menuIcons.coupon}}"></image>
       <text class="menu-text">我的优惠券</text>
-      <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="navigateToFavorite">
       <image class="menu-icon" src="{{menuIcons.favorite}}"></image>
       <text class="menu-text">我的收藏</text>
-      <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="contactService">
       <image class="menu-icon" src="{{menuIcons.contactService}}"></image>
       <text class="menu-text">联系客服</text>
-      <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="navigateToAbout">
       <image class="menu-icon" src="{{menuIcons.aboutUs}}"></image>
       <text class="menu-text">关于我们</text>
-      <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
   </view>
 

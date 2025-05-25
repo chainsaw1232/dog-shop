@@ -1,121 +1,73 @@
 <view class="container cart-page">
-  <view wx:if="{{isLoading && cartItems.length === 0}}" class="loading-container">
-    <text>购物车努力加载中...</text>
+  <view wx:if="{{isLoading && cartItems.length === 0 && !isCartEmpty}}" class="loading-container">
+    <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/loading/loading.gif" class="loading-gif"></image>
+    <text>购物车加载中...</text>
   </view>
 
-  <block wx:if="{{!isLoading && !isCartEmpty}}">
-    <scroll-view scroll-y class="cart-list-scroll">
-      <view class="cart-item" wx:for="{{cartItems}}" wx:key="_id" wx:for-item="item" wx:for-index="index">
-        <view class="select-checkbox-container" bindtap="toggleSelect" data-index="{{index}}">
-          <image
-            class="checkbox-icon"
-            src="{{item.selected ? CHOSEN_ICON_PATH : UNCHOSEN_ICON_PATH}}"
-          >
-          </image>
+  <block wx:if="{{!isCartEmpty && !isLoading}}">
+    <view class="cart-list">
+      <view class="cart-item" wx:for="{{cartItems}}" wx:key="_id">
+        <view class="item-selector" bindtap="toggleSelect" data-index="{{index}}">
+          <image class="select-icon" src="{{item.selected ? CHOSEN_ICON_PATH : UNCHOSEN_ICON_PATH}}"></image>
         </view>
-        <image
-          class="product-image"
-          src="{{item.productImage || '../../static/images/placeholder.png'}}"
-          mode="aspectFill"
-          bindtap="navigateToDetail"
-          data-id="{{item.productId}}"
-        >
-        </image>
-        <view class="product-details-wrapper">
-          <text class="product-name" bindtap="navigateToDetail" data-id="{{item.productId}}">{{item.productName}}</text>
-          <text class="product-spec" wx:if="{{item.specName}}">{{item.specName}}</text>
-          <view class="product-price-actions">
-            <text class="product-price">¥{{item.price}}</text>
-            <view class="quantity-control">
-              <button
-                class="quantity-btn minus-btn {{item.quantity <= 1 ? 'disabled-style' : ''}}"
-                bindtap="decreaseQuantity"
-                data-index="{{index}}"
-                disabled="{{item.quantity <= 1}}"
-              >-</button>
-              <input
-                class="quantity-input"
-                type="number"
-                value="{{item.quantity}}"
-                bindinput="onQuantityInput"
-                data-index="{{index}}"
-                bindblur="onQuantityBlur"
-              />
-              <button
-                class="quantity-btn plus-btn {{item.quantity >= (item.stock || 99) ? 'disabled-style' : ''}}"
-                bindtap="increaseQuantity"
-                data-index="{{index}}"
-                disabled="{{item.quantity >= (item.stock || 99)}}"
-              >+</button>
+        <image class="item-image" src="{{item.productImage}}" mode="aspectFill" bindtap="navigateToDetail" data-id="{{item.productId}}"></image>
+        <view class="item-info">
+          <view class="item-name" bindtap="navigateToDetail" data-id="{{item.productId}}">{{item.productName}}</view>
+          <view class="item-spec" wx:if="{{item.specName}}">{{item.specName}}</view>
+          <view class="item-price-quantity">
+            <view class="item-price">¥{{item.price}}</view>
+            <view class="quantity-selector">
+              <view class="quantity-btn decrease {{item.quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQuantity" data-index="{{index}}">-</view>
+              <input class="quantity-input" type="number" value="{{item.quantity}}" bindinput="onQuantityInput" bindblur="onQuantityBlur" data-index="{{index}}" />
+              <view class="quantity-btn increase {{item.quantity >= (item.stock || 99) ? 'disabled' : ''}}" bindtap="increaseQuantity" data-index="{{index}}">+</view>
             </view>
           </view>
         </view>
       </view>
-    </scroll-view>
+    </view>
+
+    <view class="bottom-bar">
+      <view class="select-all-section" bindtap="toggleSelectAll">
+        <image class="select-icon" src="{{allSelected ? CHOSEN_ICON_PATH : UNCHOSEN_ICON_PATH}}"></image>
+        <text>全选</text>
+      </view>
+      <view class="total-price-section">
+        合计: <text class="total-price-value">¥{{totalPrice}}</text>
+      </view>
+      <view class="action-buttons">
+        <button class="btn remove-btn {{selectedCount === 0 || isSubmitting ? 'disabled' : ''}}" bindtap="removeSelectedItems" disabled="{{selectedCount === 0 || isSubmitting}}">删除</button>
+        <button class="btn checkout-btn {{selectedCount === 0 || isSubmitting ? 'disabled' : ''}}" bindtap="checkout" disabled="{{selectedCount === 0 || isSubmitting}}">结算({{selectedCount}})</button>
+      </view>
+    </view>
   </block>
 
-  <view wx:if="{{!isLoading && isCartEmpty}}" class="empty-cart-container">
-    <image class="empty-cart-image" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty/empty_cart.png" mode="aspectFit"></image>
-    <text class="empty-cart-text">购物车还是空的哦，快去给主子挑点好吃的吧！</text>
-    <button class="empty-cart-btn" bindtap="navigateToIndex">去逛逛</button>
-
-    <view class="recommend-section" wx:if="{{recommendProducts.length > 0}}">
-      <view class="recommend-title-container">
-        <view class="line"></view>
-        <text class="recommend-title-text">为你推荐</text>
-        <view class="line"></view>
-      </view>
-      <view class="recommend-list">
-        <view class="recommend-item" wx:for="{{recommendProducts}}" wx:key="_id" bindtap="navigateToDetail" data-id="{{item._id}}">
-          <image
-            class="recommend-image"
-            src="{{item.mainImage || '../../static/images/placeholder.png'}}"
-            mode="aspectFill">
-          </image>
-          <text class="recommend-name">{{item.name}}</text>
-          <text class="recommend-price">¥{{item.price}}</text>
-        </view>
-      </view>
-    </view>
+  <view wx:if="{{isCartEmpty && !isLoading}}" class="empty-cart-container">
+    <image class="empty-cart-image" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty/empty_cart.png" mode="widthFix"></image>
+    <text class="empty-cart-text">购物车还是空的哦~</text>
+    <button class="go-shopping-btn" bindtap="navigateToIndex">去逛逛</button>
   </view>
 
-  <view class="bottom-bar-grid" wx:if="{{!isCartEmpty || (isLoading && cartItems.length > 0)}}">
-    <view class="bottom-bar-cell select-all-cell" bindtap="toggleSelectAll">
-      <image
-        class="checkbox-icon small-checkbox"
-        src="{{allSelected ? CHOSEN_ICON_PATH : UNCHOSEN_ICON_PATH}}"
-      >
-      </image>
-      <text class="select-all-text">全选</text>
+  <view class="recommend-section" wx:if="{{(isCartEmpty && !isLoading) || recommendProducts.length > 0}}">
+    <view class="recommend-title">
+      <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/recommend_icon.png" class="recommend-title-icon"></image>
+      为你推荐
     </view>
-
-    <view class="bottom-bar-cell total-price-cell">
-      <block wx:if="{{selectedCount > 0}}">
-        <view class="total-amount-line">
-          <text class="total-label">合计:</text>
-          <text class="total-price-value">¥{{totalPrice}}</text>
+    <view wx:if="{{isRecommendLoading && recommendProducts.length === 0}}" class="loading-container">
+      <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/loading/loading.gif" class="loading-gif-small"></image>
+      <text>推荐加载中...</text>
+    </view>
+    <view class="recommend-list" wx:if="{{recommendProducts.length > 0}}">
+      <view class="recommend-item" wx:for="{{recommendProducts}}" wx:key="_id" bindtap="navigateToDetail" data-id="{{item._id}}">
+        <image class="recommend-image" mode="aspectFill" src="{{item.mainImage}}"></image>
+        <text class="recommend-name">{{item.name}}</text>
+        <view class="recommend-price-sales">
+          <text class="recommend-price">¥{{item.price}}</text>
+          <text class="recommend-sales" wx:if="{{item.sales > 0}}">已售{{item.sales}}</text>
         </view>
-        <text class="shipping-fee-tip">(不含运费)</text>
-      </block>
-      <block wx:else>
-        <text class="total-label-placeholder">未选商品</text>
-      </block>
+      </view>
     </view>
-
-    <view class="bottom-bar-cell action-button-cell remove-cell">
-      <button
-        class="action-btn remove-selected-btn {{selectedCount === 0 ? 'disabled-style' : ''}}"
-        bindtap="removeSelectedItems"
-        disabled="{{selectedCount === 0 || isSubmitting}}"
-      >移除</button>
-    </view>
-
-    <view class="bottom-bar-cell action-button-cell checkout-cell">
-      <button
-        class="action-btn checkout-btn {{selectedCount === 0 ? 'disabled-style' : ''}}"
-        bindtap="checkout"
-        disabled="{{selectedCount === 0 || isSubmitting}}"
-      >结算</button>
+    <view wx:if="{{!isRecommendLoading && recommendProducts.length === 0 && isCartEmpty}}" class="no-recommend">
+      <text>暂时没有更多推荐啦</text>
     </view>
   </view>
 </view>

@@ -26,7 +26,7 @@
       <text>客服电话：{{contactPhone}}</text>
       <view class="action-arrow">
         <text class="action-text">拨打</text>
-        <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+        <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/拨打.png"></image>
       </view>
     </view>
     <view class="contact-item" bindtap="copyEmail">
@@ -34,7 +34,7 @@
       <text>邮箱：{{contactEmail}}</text>
       <view class="action-arrow">
         <text class="action-text">复制</text>
-        <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+        <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/复制.png"></image>
       </view>
     </view>
     <view class="contact-item" bindtap="viewLocation">
@@ -42,7 +42,7 @@
       <text>地址：{{storeAddress}}</text>
       <view class="action-arrow">
         <text class="action-text">查看地图</text>
-        <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+        <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/地图.pngstatic/images/icons/arrow-right.png"></image>
       </view>
     </view>
      <view class="contact-item qrcode-item" wx:if="{{qrcodeUrl}}">
@@ -50,7 +50,7 @@
       <text>官方微信/客服</text>
       <view class="action-arrow" bindtap="previewQrcode" data-url="{{qrcodeUrl}}">
         <image class="qrcode-image-preview" src="{{qrcodeUrl}}" mode="aspectFit"></image>
-        <image class="arrow-icon" src="/static/images/icons/arrow-right.png"></image>
+        <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/联系客服.png"></image>
       </view>
     </view>
   </view>

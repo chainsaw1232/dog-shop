@@ -1,5 +1,6 @@
-// favorite/index.js
-const app = getApp()
+// pages/favorite/index.js
+const app = getApp();
+const util = require('../../utils/util.js');
 
 Page({
   data: {
@@ -7,219 +8,208 @@ Page({
     page: 1, // 当前页码
     pageSize: 10, // 每页数量
     hasMore: true, // 是否有更多数据
-    isLoading: false // 是否正在加载
+    isLoading: false, // 是否正在加载
+    isProcessingAction: false, // 防止重复操作
   },
 
   onShow: function() {
-    // 重置页码并重新加载数据
     this.setData({
       page: 1,
       favorites: [],
-      hasMore: true
-    })
-    this.fetchFavorites()
+      hasMore: true,
+      isProcessingAction: false
+    });
+    this.fetchFavorites();
   },
 
-  // 下拉刷新
   onPullDownRefresh: function() {
-    // 重置页码并重新加载数据
     this.setData({
       page: 1,
       favorites: [],
-      hasMore: true
-    })
+      hasMore: true,
+      isProcessingAction: false
+    });
     this.fetchFavorites().then(() => {
-      wx.stopPullDownRefresh()
-    })
+      wx.stopPullDownRefresh();
+    });
   },
 
-  // 上拉加载更多
   onReachBottom: function() {
     if (this.data.hasMore && !this.data.isLoading) {
-      this.loadMore()
+      this.loadMore();
     }
   },
 
-  // 获取收藏列表
   fetchFavorites: function() {
     if (!app.globalData.openid) {
-      this.showLoginModal()
-      return Promise.resolve()
+      this.showLoginModal();
+      return Promise.resolve();
     }
-    
-    this.setData({ isLoading: true })
-    
-    // 构建请求参数
+
+    this.setData({ isLoading: true });
+
     const params = {
-      openid: app.globalData.openid,
+      action: 'list',
       page: this.data.page,
       pageSize: this.data.pageSize
-    }
-    
+      // openid is passed via context in cloud function
+    };
+
     return new Promise((resolve, reject) => {
-      wx.request({
-        url: app.globalData.baseUrl + '/api/favorite/list',
-        method: 'GET',
+      wx.cloud.callFunction({
+        name: 'favorite', // Your favorite cloud function name
         data: params,
         success: res => {
-          if (res.data && res.data.code === 0) {
-            const newFavorites = res.data.data.list || []
-            
-            // 更新收藏列表和分页信息
+          console.log('[pages/favorite/index.js] 云函数 favorite 调用成功 (list):', res);
+          if (res.result && res.result.code === 0 && res.result.data) {
+            const newFavorites = res.result.data.list || [];
+            // Assuming product details like name, image, price are returned by the 'favorite' list action
+            // If not, you might need another call or adjust the 'favorite' cloud function
             this.setData({
               favorites: this.data.page === 1 ? newFavorites : this.data.favorites.concat(newFavorites),
-              hasMore: newFavorites.length === this.data.pageSize
-            })
+              hasMore: newFavorites.length === this.data.pageSize,
+              isLoading: false
+            });
+            resolve(res.result.data);
           } else {
-            wx.showToast({
-              title: res.data.message || '获取收藏失败',
-              icon: 'none'
-            })
+            const errMsg = (res.result && res.result.message) ? res.result.message : '获取收藏失败';
+            wx.showToast({ title: errMsg, icon: 'none' });
+            this.setData({ isLoading: false });
+            reject(new Error(errMsg));
           }
-          resolve()
         },
         fail: err => {
-          wx.showToast({
-            title: '网络请求失败',
-            icon: 'none'
-          })
-          reject(err)
-        },
-        complete: () => {
-          this.setData({ isLoading: false })
+          console.error('[pages/favorite/index.js] 云函数 favorite 调用失败 (list):', err);
+          wx.showToast({ title: '网络请求失败', icon: 'none' });
+          this.setData({ isLoading: false });
+          reject(err);
         }
-      })
-    })
+      });
+    });
   },
 
-  // 加载更多
   loadMore: function() {
     if (this.data.hasMore && !this.data.isLoading) {
-      this.setData({
-        page: this.data.page + 1
-      })
-      this.fetchFavorites()
+      this.setData({ page: this.data.page + 1 });
+      this.fetchFavorites();
     }
   },
 
-  // 跳转到商品详情
   navigateToDetail: function(e) {
-    const id = e.currentTarget.dataset.id
-    wx.navigateTo({
-      url: `/pages/detail/index?id=${id}`
-    })
+    const productId = e.currentTarget.dataset.id; // Assuming the favorite item has productId
+    if (productId) {
+      wx.navigateTo({
+        url: `/pages/detail/index?id=${productId}`
+      });
+    } else {
+      console.warn("navigateToDetail: productId not found in dataset", e.currentTarget.dataset);
+      util.showError("商品信息错误");
+    }
   },
 
-  // 添加到购物车
   addToCart: function(e) {
     if (!app.globalData.openid) {
-      this.showLoginModal()
-      return
+      this.showLoginModal();
+      return;
     }
-    
-    const productId = e.currentTarget.dataset.id
-    
-    wx.showLoading({ title: '添加中...' })
-    
-    wx.request({
-      url: app.globalData.baseUrl + '/api/cart/add',
-      method: 'POST',
+    if (this.data.isProcessingAction) return;
+
+    const productId = e.currentTarget.dataset.id;
+    if (!productId) {
+        util.showError("商品ID错误");
+        return;
+    }
+
+    this.setData({ isProcessingAction: true });
+    wx.showLoading({ title: '添加中...' });
+
+    wx.cloud.callFunction({
+      name: 'cart', // Your cart cloud function name
       data: {
-        openid: app.globalData.openid,
+        action: 'add',
         productId: productId,
         quantity: 1
+        // specId can be omitted if adding default spec or product has no specs
       },
       success: res => {
-        if (res.data && res.data.code === 0) {
-          wx.showToast({
-            title: '添加成功',
-            icon: 'success'
-          })
-          
-          // 更新购物车数量
-          app.getCartCount()
+        if (res.result && res.result.code === 0) {
+          wx.showToast({ title: '添加成功', icon: 'success' });
+          app.getCartCount(); // Update cart badge
         } else {
-          wx.showToast({
-            title: res.data.message || '添加失败',
-            icon: 'none'
-          })
+          util.showError((res.result && res.result.message) || '添加失败');
         }
       },
       fail: () => {
-        wx.showToast({
-          title: '网络请求失败',
-          icon: 'none'
-        })
+        util.showError('网络请求失败');
       },
       complete: () => {
-        wx.hideLoading()
+        wx.hideLoading();
+        this.setData({ isProcessingAction: false });
       }
-    })
+    });
   },
 
-  // 取消收藏
   removeFavorite: function(e) {
     if (!app.globalData.openid) {
-      this.showLoginModal()
-      return
+      this.showLoginModal();
+      return;
     }
-    
-    const id = e.currentTarget.dataset.id
-    
+    if (this.data.isProcessingAction) return;
+
+    const favoriteId = e.currentTarget.dataset.favoriteid; // _id of the favorite record itself
+    const productId = e.currentTarget.dataset.productid; // productId as fallback
+
+    if (!favoriteId && !productId) {
+        util.showError("无法确定要取消收藏的商品");
+        return;
+    }
+
     wx.showModal({
       title: '提示',
       content: '确定要取消收藏该商品吗？',
       success: res => {
         if (res.confirm) {
-          wx.showLoading({ title: '处理中...' })
-          
-          wx.request({
-            url: app.globalData.baseUrl + '/api/favorite/delete',
-            method: 'POST',
-            data: {
-              openid: app.globalData.openid,
-              id: id
-            },
-            success: res => {
-              if (res.data && res.data.code === 0) {
-                // 更新本地收藏列表
-                const favorites = this.data.favorites.filter(item => item.id !== id)
-                this.setData({ favorites })
-                
-                wx.showToast({
-                  title: '取消成功',
-                  icon: 'success'
-                })
+          this.setData({ isProcessingAction: true });
+          wx.showLoading({ title: '处理中...' });
+
+          const params = { action: 'remove' };
+          if (favoriteId) {
+              params.favoriteId = favoriteId;
+          } else {
+              params.productId = productId; // Fallback to remove by productId
+          }
+
+          wx.cloud.callFunction({
+            name: 'favorite',
+            data: params,
+            success: cloudRes => {
+              if (cloudRes.result && cloudRes.result.code === 0) {
+                wx.showToast({ title: '取消成功', icon: 'success' });
+                // Refresh the list by calling onShow or directly manipulating the data
+                this.onShow();
               } else {
-                wx.showToast({
-                  title: res.data.message || '取消失败',
-                  icon: 'none'
-                })
+                util.showError((cloudRes.result && cloudRes.result.message) || '取消失败');
               }
             },
             fail: () => {
-              wx.showToast({
-                title: '网络请求失败',
-                icon: 'none'
-              })
+              util.showError('网络请求失败');
             },
             complete: () => {
-              wx.hideLoading()
+              wx.hideLoading();
+              this.setData({ isProcessingAction: false });
             }
-          })
+          });
         }
       }
-    })
+    });
   },
 
-  // 跳转到商城首页
   navigateToShop: function() {
     wx.switchTab({
       url: '/pages/index/index'
-    })
+    });
   },
 
-  // 显示登录提示
   showLoginModal: function() {
     wx.showModal({
       title: '提示',
@@ -229,9 +219,9 @@ Page({
         if (res.confirm) {
           wx.switchTab({
             url: '/pages/user/index'
-          })
+          });
         }
       }
-    })
+    });
   }
-})
+});

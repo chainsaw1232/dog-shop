@@ -1,397 +1,331 @@
-// orderDetail/index.js
-const app = getApp()
-const util = require('../../utils/util.js')
+// pages/orderDetail/index.js
+const app = getApp();
+const util = require('../../utils/util.js');
 
 Page({
   data: {
     id: '', // 订单ID
     orderDetail: null, // 订单详情
     statusIcon: '', // 状态图标
-    statusDesc: '' // 状态描述
+    statusDesc: '', // 状态描述
+    isLoading: true,
+    isProcessingAction: false,
   },
 
   onLoad: function(options) {
     if (options.id) {
-      this.setData({ id: options.id })
-      this.fetchOrderDetail()
+      this.setData({ id: options.id });
+      this.fetchOrderDetail();
     } else {
       wx.showToast({
         title: '参数错误',
         icon: 'none'
-      })
+      });
       setTimeout(() => {
-        wx.navigateBack()
-      }, 1500)
+        wx.navigateBack();
+      }, 1500);
     }
   },
 
-  // 获取订单详情
   fetchOrderDetail: function() {
     if (!app.globalData.openid) {
-      this.showLoginModal()
-      return
+      this.showLoginModal();
+      return;
     }
-    
-    wx.showLoading({ title: '加载中...' })
-    
-    wx.request({
-      url: app.globalData.baseUrl + '/api/order/detail',
-      method: 'GET',
+    this.setData({ isLoading: true });
+    wx.showLoading({ title: '加载中...' });
+
+    wx.cloud.callFunction({
+      name: 'orders', // Your order cloud function name
       data: {
-        openid: app.globalData.openid,
-        id: this.data.id
+        action: 'detail',
+        orderId: this.data.id
+        // openid is passed via context
       },
       success: res => {
-        if (res.data && res.data.code === 0) {
-          const orderDetail = res.data.data
-          
-          // 格式化时间
+        if (res.result && res.result.code === 0 && res.result.data) {
+          const orderDetail = res.result.data;
+
+          // Format times
           if (orderDetail.createTime) {
-            orderDetail.createTime = util.formatTime(new Date(orderDetail.createTime))
+            orderDetail.createTimeFormatted = util.formatTime(new Date(orderDetail.createTime), 'YYYY-MM-DD HH:mm:ss');
           }
           if (orderDetail.payTime) {
-            orderDetail.payTime = util.formatTime(new Date(orderDetail.payTime))
+            orderDetail.payTimeFormatted = util.formatTime(new Date(orderDetail.payTime), 'YYYY-MM-DD HH:mm:ss');
           }
           if (orderDetail.shipTime) {
-            orderDetail.shipTime = util.formatTime(new Date(orderDetail.shipTime))
+            orderDetail.shipTimeFormatted = util.formatTime(new Date(orderDetail.shipTime), 'YYYY-MM-DD HH:mm:ss');
           }
           if (orderDetail.completeTime) {
-            orderDetail.completeTime = util.formatTime(new Date(orderDetail.completeTime))
+            orderDetail.completeTimeFormatted = util.formatTime(new Date(orderDetail.completeTime), 'YYYY-MM-DD HH:mm:ss');
           }
-          
-          // 根据状态设置状态文本
+           if (orderDetail.cancelTime) {
+            orderDetail.cancelTimeFormatted = util.formatTime(new Date(orderDetail.cancelTime), 'YYYY-MM-DD HH:mm:ss');
+          }
+
+
+          let statusIcon = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_unknown.png'; // Default icon
+          let statusDesc = '订单状态未知';
+          let statusText = '未知状态';
+
           switch (orderDetail.status) {
             case 'unpaid':
-              orderDetail.statusText = '待付款'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_unpaid.png',
-                statusDesc: '请在24小时内完成支付，超时订单将自动取消'
-              })
-              break
+              statusText = '待付款';
+              statusIcon = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_unpaid.png';
+              statusDesc = '请在24小时内完成支付，超时订单将自动取消';
+              break;
             case 'unshipped':
-              orderDetail.statusText = '待发货'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_unshipped.png',
-                statusDesc: '商家正在处理您的订单，请耐心等待'
-              })
-              break
+              statusText = '待发货';
+              statusIcon = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_unshipped.png';
+              statusDesc = '商家正在处理您的订单，请耐心等待';
+              break;
             case 'shipped':
-              orderDetail.statusText = '待收货'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_shipped.png',
-                statusDesc: '商品已发出，请注意查收'
-              })
-              break
+              statusText = '待收货';
+              statusIcon = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_shipped.png';
+              statusDesc = '商品已发出，请注意查收';
+              break;
             case 'completed':
-              orderDetail.statusText = '已完成'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_completed.png',
-                statusDesc: '订单已完成，感谢您的购买'
-              })
-              break
+              statusText = '已完成';
+              statusIcon = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_completed.png';
+              statusDesc = '订单已完成，感谢您的购买';
+              break;
             case 'cancelled':
-              orderDetail.statusText = '已取消'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_cancelled.png',
-                statusDesc: '订单已取消'
-              })
-              break
-            case 'refunding':
-              orderDetail.statusText = '退款中'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_refunding.png',
-                statusDesc: '退款申请处理中，请耐心等待'
-              })
-              break
-            case 'refunded':
-              orderDetail.statusText = '已退款'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_refunded.png',
-                statusDesc: '退款已完成，款项将原路退回'
-              })
-              break
-            default:
-              orderDetail.statusText = '未知状态'
-              this.setData({
-                statusIcon: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_unknown.png',
-                statusDesc: '订单状态未知'
-              })
+              statusText = '已取消';
+              statusIcon = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/status_cancelled.png';
+              statusDesc = '订单已取消';
+              break;
+            // Add cases for refunding, refunded if your system supports them
           }
-          
-          this.setData({ orderDetail })
+          orderDetail.statusText = statusText;
+
+          this.setData({ orderDetail, statusIcon, statusDesc, isLoading: false });
         } else {
           wx.showToast({
-            title: res.data.message || '获取订单失败',
+            title: (res.result && res.result.message) || '获取订单失败',
             icon: 'none'
-          })
-          setTimeout(() => {
-            wx.navigateBack()
-          }, 1500)
+          });
+          this.setData({ isLoading: false });
+          // setTimeout(() => { wx.navigateBack(); }, 1500);
         }
       },
       fail: () => {
-        wx.showToast({
-          title: '网络请求失败',
-          icon: 'none'
-        })
+        wx.showToast({ title: '网络请求失败', icon: 'none' });
+        this.setData({ isLoading: false });
       },
       complete: () => {
-        wx.hideLoading()
+        wx.hideLoading();
       }
-    })
+    });
   },
 
-  // 复制订单号
   copyOrderNumber: function() {
-    wx.setClipboardData({
-      data: this.data.orderDetail.orderNumber,
-      success: () => {
-        wx.showToast({
-          title: '复制成功',
-          icon: 'success'
-        })
-      }
-    })
+    if (this.data.orderDetail && this.data.orderDetail.orderNo) {
+      wx.setClipboardData({
+        data: this.data.orderDetail.orderNo,
+        success: () => {
+          wx.showToast({ title: '复制成功', icon: 'success' });
+        }
+      });
+    }
   },
 
-  // 取消订单
   cancelOrder: function() {
+    if (this.data.isProcessingAction) return;
     wx.showModal({
       title: '提示',
       content: '确定要取消该订单吗？',
       success: res => {
         if (res.confirm) {
-          wx.showLoading({ title: '处理中...' })
-          
-          wx.request({
-            url: app.globalData.baseUrl + '/api/order/cancel',
-            method: 'POST',
+          this.setData({ isProcessingAction: true });
+          wx.showLoading({ title: '处理中...' });
+          wx.cloud.callFunction({
+            name: 'orders',
             data: {
-              openid: app.globalData.openid,
-              id: this.data.id
+              action: 'cancel',
+              orderId: this.data.id
             },
-            success: res => {
-              if (res.data && res.data.code === 0) {
-                wx.showToast({
-                  title: '取消成功',
-                  icon: 'success'
-                })
-                
-                // 刷新订单详情
-                this.fetchOrderDetail()
+            success: cloudRes => {
+              if (cloudRes.result && cloudRes.result.code === 0) {
+                wx.showToast({ title: '取消成功', icon: 'success' });
+                this.fetchOrderDetail(); // Refresh detail
               } else {
-                wx.showToast({
-                  title: res.data.message || '取消失败',
-                  icon: 'none'
-                })
+                util.showError((cloudRes.result && cloudRes.result.message) || '取消失败');
               }
             },
-            fail: () => {
-              wx.showToast({
-                title: '网络请求失败',
-                icon: 'none'
-              })
-            },
+            fail: () => { util.showError('网络请求失败'); },
             complete: () => {
-              wx.hideLoading()
+              wx.hideLoading();
+              this.setData({ isProcessingAction: false });
             }
-          })
+          });
         }
       }
-    })
+    });
   },
 
-  // 支付订单
   payOrder: function() {
-    wx.showLoading({ title: '获取支付信息...' })
-    
-    wx.request({
-      url: app.globalData.baseUrl + '/api/order/pay',
-      method: 'POST',
+    if (this.data.isProcessingAction) return;
+    this.setData({ isProcessingAction: true });
+    wx.showLoading({ title: '获取支付信息...' });
+
+    wx.cloud.callFunction({
+      name: 'orders',
       data: {
-        openid: app.globalData.openid,
-        id: this.data.id
+        action: 'getPaymentParams',
+        orderId: this.data.id
       },
       success: res => {
-        if (res.data && res.data.code === 0) {
-          const payParams = res.data.data
-          
-          // 发起微信支付
+        if (res.result && res.result.code === 0 && res.result.data && res.result.data.paymentParams) {
+          const payParams = res.result.data.paymentParams;
           wx.requestPayment({
             ...payParams,
             success: () => {
-              // 支付成功，跳转到支付结果页面
-              wx.redirectTo({
-                url: `/pages/payResult/index?orderId=${this.data.id}&status=success`
-              })
+              wx.showToast({ title: '支付成功', icon: 'success' });
+              // wx.redirectTo({ url: `/pages/payResult/index?orderId=${this.data.id}&status=success` });
+              this.fetchOrderDetail(); // Refresh to show new status
             },
             fail: err => {
-              console.log('支付失败', err)
-              // 用户取消支付或支付失败
+              console.log('支付失败或取消:', err);
               if (err.errMsg !== 'requestPayment:fail cancel') {
-                wx.showToast({
-                  title: '支付失败',
-                  icon: 'none'
-                })
+                util.showError('支付失败');
               }
+            },
+            complete: () => {
+              this.setData({ isProcessingAction: false });
+              wx.hideLoading(); // Hide loading from getPaymentParams
             }
-          })
+          });
         } else {
-          wx.showToast({
-            title: res.data.message || '获取支付信息失败',
-            icon: 'none'
-          })
+          util.showError((res.result && res.result.message) || '获取支付信息失败');
+          this.setData({ isProcessingAction: false });
+          wx.hideLoading();
         }
       },
       fail: () => {
-        wx.showToast({
-          title: '网络请求失败',
-          icon: 'none'
-        })
-      },
-      complete: () => {
-        wx.hideLoading()
+        util.showError('网络请求失败');
+        this.setData({ isProcessingAction: false });
+        wx.hideLoading();
       }
-    })
+    });
   },
 
-  // 查看物流
   viewLogistics: function() {
-    wx.navigateTo({
-      url: `/pages/logistics/index?id=${this.data.id}`
-    })
+    // wx.navigateTo({ url: `/pages/logistics/index?id=${this.data.id}` });
+    util.showError('物流功能暂未实现');
   },
 
-  // 确认收货
   confirmReceive: function() {
+    if (this.data.isProcessingAction) return;
     wx.showModal({
       title: '提示',
       content: '确认已收到商品吗？',
       success: res => {
         if (res.confirm) {
-          wx.showLoading({ title: '处理中...' })
-          
-          wx.request({
-            url: app.globalData.baseUrl + '/api/order/confirm',
-            method: 'POST',
+          this.setData({ isProcessingAction: true });
+          wx.showLoading({ title: '处理中...' });
+          wx.cloud.callFunction({
+            name: 'orders',
             data: {
-              openid: app.globalData.openid,
-              id: this.data.id
+              action: 'confirmReceive',
+              orderId: this.data.id
             },
-            success: res => {
-              if (res.data && res.data.code === 0) {
-                wx.showToast({
-                  title: '确认成功',
-                  icon: 'success'
-                })
-                
-                // 刷新订单详情
-                this.fetchOrderDetail()
+            success: cloudRes => {
+              if (cloudRes.result && cloudRes.result.code === 0) {
+                wx.showToast({ title: '确认成功', icon: 'success' });
+                this.fetchOrderDetail(); // Refresh detail
               } else {
-                wx.showToast({
-                  title: res.data.message || '确认失败',
-                  icon: 'none'
-                })
+                util.showError((cloudRes.result && cloudRes.result.message) || '确认失败');
               }
             },
-            fail: () => {
-              wx.showToast({
-                title: '网络请求失败',
-                icon: 'none'
-              })
-            },
+            fail: () => { util.showError('网络请求失败'); },
             complete: () => {
-              wx.hideLoading()
+              wx.hideLoading();
+              this.setData({ isProcessingAction: false });
             }
-          })
+          });
         }
       }
-    })
+    });
   },
 
-  // 再次购买
   buyAgain: function() {
-    // 将订单中的商品添加到购物车
-    this.addProductsToCart(this.data.orderDetail.products)
-  },
+    if (!this.data.orderDetail || !this.data.orderDetail.orderItems || this.data.orderDetail.orderItems.length === 0) {
+      util.showError("订单中没有商品可以再次购买");
+      return;
+    }
+    if (this.data.isProcessingAction) return;
+    this.setData({ isProcessingAction: true });
+    wx.showLoading({ title: '处理中...' });
 
-  // 将商品添加到购物车
-  addProductsToCart: function(products) {
-    let count = 0
-    const total = products.length
-    
-    wx.showLoading({ title: '处理中...' })
-    
-    products.forEach(product => {
-      wx.request({
-        url: app.globalData.baseUrl + '/api/cart/add',
-        method: 'POST',
+    const items = this.data.orderDetail.orderItems;
+    const addToCartPromises = items.map(item => {
+      return wx.cloud.callFunction({
+        name: 'cart',
         data: {
-          openid: app.globalData.openid,
-          productId: product.productId,
-          specId: product.specId || '',
-          quantity: product.quantity
-        },
-        success: res => {
-          if (res.data && res.data.code === 0) {
-            count++
-            
-            if (count === total) {
-              wx.hideLoading()
-              wx.showToast({
-                title: '已添加到购物车',
-                icon: 'success'
-              })
-              
-              // 更新购物车数量
-              app.getCartCount()
-              
-              // 跳转到购物车页面
-              wx.switchTab({
-                url: '/pages/cart/index'
-              })
-            }
-          } else {
-            wx.hideLoading()
-            wx.showToast({
-              title: res.data.message || '添加失败',
-              icon: 'none'
-            })
+          action: 'add',
+          productId: item.productId,
+          quantity: item.quantity,
+          specId: item.specId || '' // Ensure specId is handled
+        }
+      });
+    });
+
+    Promise.all(addToCartPromises)
+      .then(results => {
+        wx.hideLoading();
+        let allSuccess = true;
+        results.forEach(r => {
+          if (!r.result || r.result.code !== 0) {
+            allSuccess = false;
+            console.warn("部分商品加入购物车失败:", r.result ? r.result.message : "未知错误", "对应商品:", items[results.indexOf(r)].productName);
           }
-        },
-        fail: () => {
-          wx.hideLoading()
-          wx.showToast({
-            title: '网络请求失败',
-            icon: 'none'
-          })
+        });
+        if (allSuccess) {
+          wx.showToast({ title: '商品已再次加入购物车', icon: 'success' });
+          app.getCartCount();
+          wx.switchTab({ url: '/pages/cart/index' });
+        } else {
+          util.showError('部分商品添加失败，请稍后重试');
         }
       })
-    })
+      .catch((err) => {
+        wx.hideLoading();
+        util.showError('再次购买失败，请检查网络');
+        console.error("再次购买，Promise.all失败:", err);
+      }).finally(()=>{
+        this.setData({ isProcessingAction: false });
+      });
   },
 
-  // 评价订单
   writeReview: function() {
-    wx.navigateTo({
-      url: `/pages/review/index?orderId=${this.data.id}`
-    })
+    if (this.data.orderDetail && this.data.orderDetail.hasReviewed) {
+        util.showError("该订单已评价过啦");
+        return;
+    }
+    if (this.data.orderDetail && (this.data.orderDetail.status === 'completed' || this.data.orderDetail.status === 'toEvaluate')) { // 假设 'toEvaluate' 也是可评价状态
+        wx.navigateTo({
+            url: `/pages/review/index?orderId=${this.data.id}`
+        });
+    } else {
+        util.showError("当前订单状态无法评价");
+    }
   },
 
-  // 联系客服
   contactService: function() {
-    // 这里可以使用微信小程序的客服功能
-    // 或者跳转到自定义的客服页面
+    wx.makePhoneCall({
+      phoneNumber: '15051884139' // 从 about 页面获取或配置
+    });
   },
 
-  // 跳转到商品详情
   navigateToProduct: function(e) {
-    const id = e.currentTarget.dataset.id
-    wx.navigateTo({
-      url: `/pages/detail/index?id=${id}`
-    })
+    const productId = e.currentTarget.dataset.id;
+    if (productId) {
+      wx.navigateTo({
+        url: `/pages/detail/index?id=${productId}`
+      });
+    }
   },
 
-  // 显示登录提示
   showLoginModal: function() {
     wx.showModal({
       title: '提示',
@@ -399,13 +333,11 @@ Page({
       confirmText: '去登录',
       success: res => {
         if (res.confirm) {
-          wx.switchTab({
-            url: '/pages/user/index'
-          })
+          wx.switchTab({ url: '/pages/user/index' });
         } else {
-          wx.navigateBack()
+          wx.navigateBack();
         }
       }
-    })
+    });
   }
-})
+});
