@@ -1,222 +1,38 @@
-/* pages/category/index.wxss */
-.page-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+/* modified_project/pages/category/index.wxss */
+
+page {
+  height: 100%;
   background-color: #f4f4f4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    Segoe UI, Arial, Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft Yahei',
+    sans-serif;
 }
 
-/* 筛选/排序栏样式 (如果启用) */
-.filter-bar {
+.category-page-container {
   display: flex;
-  justify-content: space-around;
+  flex-direction: column; /* 整体是列向，先处理错误或加载，再是主内容 */
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Initial Loading and Error States */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  height: 88rpx;
-  background-color: #fff;
-  border-bottom: 1rpx solid #eee;
-  font-size: 28rpx;
-  color: #333;
-}
-
-.sort-item {
-  flex: 1;
+  height: 100%; /* 占据整个页面高度 */
   text-align: center;
-  line-height: 88rpx;
-  position: relative;
-}
-
-.sort-item.active {
-  color: #ff8c69; /* 主题色 */
-}
-
-.sort-price .sort-arrows {
-  display: inline-flex;
-  flex-direction: column;
-  margin-left: 8rpx;
-  position: relative;
-  top: -2rpx; /* 微调对齐 */
-}
-
-.sort-price .arrow {
-  width: 0;
-  height: 0;
-  border-left: 8rpx solid transparent;
-  border-right: 8rpx solid transparent;
-}
-
-.sort-price .arrow.up {
-  border-bottom: 10rpx solid #ccc;
-  margin-bottom: 4rpx;
-}
-.sort-price .arrow.up.active {
-  border-bottom-color: #ff8c69;
-}
-
-.sort-price .arrow.down {
-  border-top: 10rpx solid #ccc;
-}
-.sort-price .arrow.down.active {
-  border-top-color: #ff8c69;
-}
-
-
-/* 内容区域布局 */
-.content-wrapper {
-  display: flex;
-  flex: 1; /* 占据剩余高度 */
-  overflow: hidden; /* 防止内部滚动影响外部 */
-}
-
-.content-wrapper.with-sidebar {
-  /* 如果有侧边栏，则启用此样式 */
-}
-
-/* 左侧分类导航 */
-.left-sidebar {
-  width: 180rpx;
-  height: 100%;
-  background-color: #f8f8f8;
+  padding: 40rpx;
   box-sizing: border-box;
 }
 
-.left-category-item {
+.loading-image {
+  width: 100rpx;
   height: 100rpx;
-  line-height: 100rpx;
-  text-align: center;
-  font-size: 28rpx;
-  color: #333;
-  border-bottom: 1rpx solid #eee;
-  box-sizing: border-box;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 10rpx;
-}
-
-.left-category-item.active {
-  background-color: #fff;
-  color: #ff8c69; /* 主题色 */
-  font-weight: bold;
-  border-left: 6rpx solid #ff8c69;
-}
-
-/* 右侧商品列表容器 */
-.right-product-list-container {
-  flex: 1;
-  height: 100%;
-  background-color: #f4f4f4;
-  box-sizing: border-box;
-  padding-top: 20rpx; /* 给商品列表一些顶部间距 */
-}
-
-.product-grid {
-  display: flex;
-  flex-wrap: wrap;
-  padding: 0 10rpx; /* 左右各10rpx的内边距 */
-  justify-content: space-between;
-}
-
-.product-item-wrapper {
-  width: calc(50% - 10rpx); /* 两列布局，减去中间的间隙 */
-  background-color: #fff;
-  border-radius: 12rpx;
   margin-bottom: 20rpx;
-  overflow: hidden;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
-}
-
-.product-image {
-  width: 100%;
-  height: 340rpx; /* 根据实际图片比例调整 */
-  display: block; /* 消除图片底部空隙 */
-}
-
-.product-info {
-  padding: 16rpx;
-}
-
-.product-name {
-  font-size: 28rpx;
-  color: #333;
-  line-height: 1.4;
-  height: 78.4rpx; /* 约两行的高度 */
-  /* 多行省略在 text-ellipsis-2 class 中实现 */
-}
-
-.text-ellipsis-2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.product-price {
-  margin-top: 10rpx;
-  display: flex;
-  align-items: baseline;
-}
-
-.price-current {
-  font-size: 32rpx;
-  color: #ff4d4f;
-  font-weight: bold;
-}
-
-.price-original {
-  font-size: 24rpx;
-  color: #999;
-  text-decoration: line-through;
-  margin-left: 10rpx;
-}
-
-.product-sales {
-  font-size: 22rpx;
-  color: #999;
-  margin-top: 6rpx;
-}
-
-.product-tag {
-  position: absolute;
-  top: 16rpx;
-  left: 0;
-  padding: 4rpx 16rpx;
-  height: 36rpx;
-  line-height: 36rpx;
-  background-color: #FF8C69;
-  color: #fff;
-  font-size: 20rpx;
-  border-radius: 0 18rpx 18rpx 0;
-}
-.new-tag {
-  background-color: #ffab2d; /* 新品标签颜色 */
-}
-.hot-tag {
-  background-color: #ff4d4f; /* 热销标签颜色 */
-}
-
-
-/* 加载更多和空状态样式 */
-.loading-more, .empty-state-container {
-  padding: 40rpx 0;
-  text-align: center;
-  color: #999;
-  font-size: 26rpx;
-}
-.loading-more.no-more {
-  color: #ccc;
-}
-
-.loading-icon {
-  width: 32rpx;
-  height: 32rpx;
-  border: 4rpx solid #e9e9e9;
-  border-top-color: #FF8C69;
-  border-radius: 50%;
-  display: inline-block;
-  animation: spin 0.8s linear infinite;
-  margin-right: 10rpx;
-  vertical-align: middle;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -224,74 +40,186 @@
   100% { transform: rotate(360deg); }
 }
 
-.empty-state-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 150rpx; /* 适当调整，让它更居中 */
-}
-
-.empty-image {
+.error-image {
   width: 200rpx;
   height: 200rpx;
   margin-bottom: 30rpx;
   opacity: 0.7;
 }
 
-.empty-text {
+.error-message {
   font-size: 28rpx;
-  color: #999;
+  color: #666;
   margin-bottom: 40rpx;
 }
 
-.empty-action-btn {
-  height: 72rpx;
-  line-height: 72rpx;
-  padding: 0 60rpx;
-  font-size: 28rpx;
+.retry-button {
+  padding: 15rpx 40rpx;
+  font-size: 30rpx;
   color: #fff;
   background-color: #FF8C69; /* 主题色 */
-  border-radius: 36rpx;
-}
-.empty-action-btn.retry-button {
-   background-color: #ffab2d;
+  border-radius: 40rpx;
+  border: none;
 }
 
-/* 骨架屏样式 */
-.skeleton-loading-container {
-  padding: 20rpx 10rpx 0;
-}
-.product-grid-skeleton {
+/* Main Content Layout */
+.main-content {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  flex: 1; /* 占据剩余空间 */
+  overflow: hidden; /* 防止内部滚动影响外部 */
 }
-.product-item-skeleton {
-  width: calc(50% - 10rpx);
-  margin-bottom: 20rpx;
+
+.main-content.with-sidebar {
+  flex-direction: row;
+}
+
+/* Left Sidebar for Categories */
+.left-sidebar {
+  width: 180rpx; /* 左侧导航宽度 */
+  height: 100%;
+  background-color: #f8f8f8;
+  box-shadow: 2rpx 0 5rpx rgba(0, 0, 0, 0.05);
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 文本居中 */
+  height: 100rpx;
+  padding: 0 10rpx;
+  font-size: 26rpx;
+  color: #333;
+  text-align: center;
+  border-bottom: 1rpx solid #eee;
+  box-sizing: border-box;
+  position: relative;
+  word-break: break-all; /* 防止文字过长溢出 */
+}
+
+.category-item.active {
   background-color: #fff;
-  border-radius: 12rpx;
-  padding: 16rpx;
+  color: #FF8C69; /* 主题色 */
+  font-weight: bold;
+}
+
+.category-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8rpx;
+  height: 50rpx;
+  background-color: #FF8C69; /* 主题色 */
+  border-radius: 0 4rpx 4rpx 0;
+}
+
+.category-icon {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 10rpx; /* 如果有图标 */
+}
+
+/* Right Content Area for Products */
+.right-content {
+  flex: 1;
+  height: 100%;
+  background-color: #fff;
+  padding: 20rpx;
   box-sizing: border-box;
 }
-.skeleton-image {
-  width: 100%;
-  height: 300rpx; /* 根据实际图片高度调整 */
-  background-color: #e0e0e0;
-  border-radius: 8rpx;
-  margin-bottom: 16rpx;
-}
-.skeleton-line {
-  height: 28rpx;
-  background-color: #e0e0e0;
-  border-radius: 4rpx;
-  margin-bottom: 12rpx;
-}
-.skeleton-line.short {
-  width: 60%;
-}
-.skeleton-line.long {
-  width: 90%;
+
+.product-list-container {
+  /* 可以添加特定容器样式，如果需要 */
 }
 
+.product-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; /* 两端对齐 */
+  gap: 20rpx; /* 控制商品卡片之间的间隙 */
+}
+
+.product-card {
+  width: calc(50% - 10rpx); /* 两列布局，减去gap的一半 */
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  margin-bottom: 20rpx; /* 卡片底部间距 */
+  display: flex;
+  flex-direction: column;
+}
+
+.product-image {
+  width: 100%;
+  height: 320rpx; /* 根据需要调整图片高度 */
+  background-color: #eee; /* 图片加载时的占位背景 */
+}
+
+.product-info {
+  padding: 16rpx;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* 使得info区域填满剩余空间 */
+}
+
+.product-info .name {
+  font-size: 26rpx;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 8rpx;
+  /* 多行文字溢出显示省略号 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: calc(26rpx * 1.4 * 2); /* 保证两行的高度 */
+}
+
+.product-info .details-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto; /* 将价格和销量推到底部 */
+}
+
+.product-info .price {
+  font-size: 30rpx;
+  color: #FF5000; /* 突出价格颜色 */
+  font-weight: bold;
+}
+
+.product-info .sales {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* Load More and No More Indicators */
+.load-more-indicator,
+.no-more-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30rpx 0;
+  font-size: 24rpx;
+  color: #999;
+}
+.loading-image-small {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 10rpx;
+  animation: spin 1s linear infinite; /* 复用上面的spin动画 */
+}
+
+
+/* Empty State Container (if not using a component that handles its own full height) */
+.empty-state-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 150rpx; /* 调整垂直位置 */
+  width: 100%;
+}

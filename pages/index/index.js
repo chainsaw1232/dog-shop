@@ -1,4 +1,4 @@
-// pages/index/index.js
+// modified_project/pages/index/index.js
 const app = getApp();
 
 Page({
@@ -11,7 +11,7 @@ Page({
     brandInfo: {
       title: '火山零食小卖部', // 默认店铺名称
       description: '加载中...',
-      imageUrl: '' // 默认logo，建议在云函数中提供一个真实存在的默认路径
+      imageUrl: '' // 默认logo
     },
     isLoading: true,
     isPageError: false,
@@ -19,8 +19,9 @@ Page({
     isHotProductsLoading: false,
     isHotProductsEnd: false,
     hotProductsPage: 1,
-    hotProductsPageSize: 6, // 保持与wxml中一致或根据实际情况调整
-    lastInteractionTime: Date.now() // 用于页面状态管理
+    hotProductsPageSize: 6,
+    lastInteractionTime: Date.now(), // 用于页面状态管理
+    searchKeyword: '', // 新增：用于绑定搜索框输入内容
   },
 
   onLoad: function(options) {
@@ -33,12 +34,9 @@ Page({
     this.setData({
       lastInteractionTime: Date.now()
     });
-    // 检查购物车数量
     if (app.globalData.openid && typeof app.getCartCount === 'function') {
       app.getCartCount();
     }
-    // 如果页面数据显示为空，并且当前不处于加载中或错误状态，则可以考虑重新加载
-    // 但更常见的做法是在onLoad或onPullDownRefresh中加载核心数据
     if (this.data.banners.length === 0 && !this.data.isLoading && !this.data.isPageError) {
       console.log('Index page showed with no data and not loading/error, refetching home data.');
       this.fetchHomePageData();
@@ -51,7 +49,6 @@ Page({
       lastInteractionTime: Date.now(),
       hotProductsPage: 1,
       isHotProductsEnd: false,
-      // 清空现有数据以便重新加载
       banners: [],
       categories: [],
       newProducts: [],
@@ -60,7 +57,8 @@ Page({
       brandInfo: { title: '火山零食小卖部', description: '加载中...', imageUrl: '' },
       isLoading: true,
       isPageError: false,
-      errorMessage: ''
+      errorMessage: '',
+      searchKeyword: '' // 下拉刷新时也清空搜索词
     });
     this.fetchHomePageData();
   },
@@ -77,7 +75,6 @@ Page({
     }
   },
 
-  // 获取首页核心数据
   fetchHomePageData: function() {
     console.log('fetchHomePageData 开始执行...');
     this.setData({ isLoading: true, isPageError: false, errorMessage: '' });
@@ -91,10 +88,11 @@ Page({
       console.log('[pages/index.js] getHomeData 云函数完整返回: ', JSON.stringify(res));
       if (res.result && res.result.code === 0 && res.result.data) {
         const data = res.result.data;
-        const defaultBrandInfo = { 
-          title: '火山零食小卖部', 
-          description: '品质保证，爱宠首选', 
-          imageUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png' // 确保此路径有效
+        const defaultBrandInfo = {
+          title: '火山零食小卖部',
+          description: '品质保证，爱宠首选',
+          // 确保这个云存储路径是有效的，或者替换为您的实际默认logo路径
+          imageUrl: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png'
         };
 
         this.setData({
@@ -125,7 +123,6 @@ Page({
     });
   },
 
-  // 加载更多热销商品
   loadMoreHotProducts: function() {
     if (this.data.isHotProductsEnd || this.data.isHotProductsLoading) return;
     this.setData({ isHotProductsLoading: true });
@@ -163,7 +160,52 @@ Page({
     });
   },
 
-  // --- 事件处理函数 ---
+  // --- 搜索相关方法 ---
+  onSearchInput: function(e) {
+    this.setData({
+      searchKeyword: e.detail.value
+    });
+  },
+
+  clearSearchKeyword: function() {
+    this.setData({
+      searchKeyword: ''
+    });
+  },
+
+  onSearchConfirm: function() {
+    const keyword = this.data.searchKeyword.trim();
+    if (!keyword) {
+      wx.showToast({
+        title: '请输入搜索关键词',
+        icon: 'none'
+      });
+      return;
+    }
+    // 跳转到分类页，并带上搜索参数
+    // 分类页的 onLoad 需要能接收 keyword 参数
+    // 同时，为了让分类页知道这是搜索模式，而不是普通的分类浏览，可以考虑再加一个参数 type=search
+    // 或者，分类页逻辑里判断，如果有 keyword，则认为是搜索。
+    console.log(`准备搜索，关键词: ${keyword}`);
+    app.globalData.categoryPageFilter = {
+      keyword: keyword,
+      // type: 'search' // 可选，用于明确告知分类页是搜索模式
+    };
+    wx.switchTab({
+      url: '/pages/category/index',
+      success: () => {
+        // 跳转成功后，可以清空首页的搜索框，或者不清空由用户决定
+        // this.setData({ searchKeyword: '' }); 
+      },
+      fail: (err) => {
+        console.error('跳转到分类页进行搜索失败:', err);
+        delete app.globalData.categoryPageFilter; // 清理全局过滤器，以防影响下次正常进入分类页
+        wx.showToast({ title: '无法打开搜索结果页', icon: 'none' });
+      }
+    });
+  },
+
+  // --- 其他事件处理函数 ---
   onBannerTap: function(e) {
     const item = e.currentTarget.dataset.item;
     console.log('Banner tapped:', item);
@@ -177,46 +219,75 @@ Page({
         fail: () => { delete app.globalData.categoryPageFilter; }
       });
     } else if (item.linkType === 'webview' && item.linkUrl) {
-      // wx.navigateTo({ url: `/pages/webview/index?url=${encodeURIComponent(item.linkUrl)}` });
       wx.showToast({ title: '暂不支持打开外部链接', icon: 'none' });
     }
   },
 
   onCategoryTap: function(e) {
-    const categoryId = e.currentTarget.dataset.id; // 这个ID现在应该是 item._id (字符串)
+    const categoryId = e.currentTarget.dataset.id;
     console.log('Category tapped, ID:', categoryId, 'Type:', typeof categoryId);
     if (categoryId) {
-      // **关键检查点**：
-      // 确保 categoryId 是字符串类型，并且是分类的 _id (例如 "cat_01")
-      // 而不是数字类型的 id (例如 1)
-      app.globalData.categoryPageFilter = { 
-        categoryId: categoryId 
+      app.globalData.categoryPageFilter = {
+        categoryId: categoryId
       };
       wx.switchTab({
         url: '/pages/category/index',
-        success: function(res) {
-          console.log('Successfully switched to Category Tab for categoryId:', categoryId);
-        },
-        fail: function(err) {
-          console.error('Failed to switch to Category Tab:', err);
+        fail: (err) => {
+          console.error('跳转到分类页失败 (onCategoryTap):', err);
           delete app.globalData.categoryPageFilter;
           wx.showToast({ title: '无法打开分类页面', icon: 'none' });
         }
       });
     } else {
-      console.warn('Category tap missing ID or ID is invalid:', e.currentTarget.dataset);
       wx.showToast({ title: '无效的分类选择', icon: 'none' });
     }
   },
 
   onCouponTap: function(e) {
-    const couponId = e.currentTarget.dataset.id;
-    console.log('Coupon tapped, ID:', couponId);
-    wx.navigateTo({ url: '/pages/coupon/index' }); // 跳转到优惠券列表页
+    const couponTemplateId = e.currentTarget.dataset.id;
+    console.log('Attempting to receive coupon, Template ID:', couponTemplateId);
+    if (!couponTemplateId) {
+      this.showError('优惠券信息错误，无法领取');
+      return;
+    }
+    if (!app.globalData.openid) {
+      wx.showModal({
+        title: '登录提示',
+        content: '请先登录后再领取优惠券哦~',
+        confirmText: '去登录',
+        cancelText: '暂不领取',
+        success: res => {
+          if (res.confirm) { wx.switchTab({ url: '/pages/user/index' }); }
+        }
+      });
+      return;
+    }
+    wx.showLoading({ title: '正在领取...' });
+    wx.cloud.callFunction({
+      name: 'coupon',
+      data: { action: 'receive', templateId: couponTemplateId }
+    })
+    .then(res => {
+      wx.hideLoading();
+      if (res.result && res.result.code === 0) {
+        wx.showToast({ title: res.result.message || '领取成功！', icon: 'success', duration: 2000 });
+        const updatedCoupons = this.data.coupons.map(c => {
+          if (c._id === couponTemplateId) { return { ...c, received: true }; }
+          return c;
+        });
+        this.setData({ coupons: updatedCoupons });
+      } else {
+        this.showError((res.result && res.result.message) || '领取失败，请稍后再试');
+      }
+    })
+    .catch(err => {
+      wx.hideLoading();
+      this.showError('网络繁忙，领取失败');
+      console.error("[pages/index.js] 调用 coupon 云函数 (receive) 失败:", err);
+    });
   },
 
   onMoreCouponTap: function() {
-    console.log('More coupons tapped');
     wx.navigateTo({ url: '/pages/coupon/index' });
   },
 
@@ -225,13 +296,10 @@ Page({
     console.log('Product tapped, ID:', productId);
     if (productId) {
       wx.navigateTo({ url: `/pages/detail/index?id=${productId}` });
-    } else {
-      console.warn('Product tap missing ID:', e.currentTarget.dataset);
     }
   },
 
   onMoreNewProductTap: function() {
-    console.log('Attempting to navigate to New Products via TabBar...');
     app.globalData.categoryPageFilter = { type: 'new' };
     wx.switchTab({
       url: '/pages/category/index',
@@ -240,7 +308,6 @@ Page({
   },
 
   onMoreHotProductTap: function() {
-    console.log('Attempting to navigate to Hot Products via TabBar...');
     app.globalData.categoryPageFilter = { type: 'hot' };
     wx.switchTab({
       url: '/pages/category/index',
@@ -249,7 +316,6 @@ Page({
   },
 
   onBrandTap: function() {
-    console.log('Brand section tapped');
     wx.navigateTo({ url: '/pages/about/index' });
   },
 

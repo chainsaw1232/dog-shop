@@ -1,336 +1,370 @@
-// orderConfirm/index.js
-const app = getApp()
+// pages/orderConfirm/index.js
+const app = getApp();
 
 Page({
   data: {
-    type: '', // 'cart' 或 'buyNow'
+    type: '', 
     address: null,
     orderItems: [],
     remark: '',
-    productAmount: '0.00',
-    shippingFee: '0.00',
-    couponAmount: '0.00',
-    totalAmount: '0.00',
-    availableCoupons: [],
-    selectedCoupon: null,
-    showCoupon: false,
-    tempSelectedCoupon: null // 临时选中的优惠券，确认后才会真正应用
+    productAmount: '0.00', 
+    shippingFee: '0.00',   
+    couponAmount: '0.00',  
+    totalAmount: '0.00',   
+    availableCoupons: [],  
+    selectedCoupon: null,  
+    showCoupon: false,     
+    tempSelectedCoupon: null, 
+    isSubmitting: false 
   },
 
   onLoad: function(options) {
-    // 获取订单类型：购物车结算 或 立即购买
     if (options.type) {
-      this.setData({ type: options.type })
+      this.setData({ type: options.type });
       
-      // 根据类型获取订单商品
+      let itemsToProcess = [];
       if (options.type === 'cart') {
-        // 从购物车结算
-        const checkoutItems = wx.getStorageSync('checkoutItems') || []
-        this.setData({ orderItems: checkoutItems })
+        itemsToProcess = wx.getStorageSync('checkoutItems') || [];
       } else if (options.type === 'buyNow') {
-        // 立即购买
-        const buyNowItem = wx.getStorageSync('buyNowItem')
+        const buyNowItem = wx.getStorageSync('buyNowItem');
         if (buyNowItem) {
-          this.setData({ orderItems: [buyNowItem] })
+          itemsToProcess = [buyNowItem];
         }
       }
       
-      // 计算订单金额
-      this.calculateAmount()
+      if (itemsToProcess.length === 0 && options.type !== 'buyNow') { // buyNow可能后续添加商品
+          wx.showToast({ title: '没有需要结算的商品', icon: 'none' });
+          setTimeout(() => wx.navigateBack(), 1500);
+          return;
+      }
+      this.setData({ orderItems: itemsToProcess });
+      this.calculateAmount(); 
+      
+    } else {
+        wx.showToast({ title: '订单类型错误', icon: 'none' });
+        setTimeout(() => wx.navigateBack(), 1500);
     }
-    
-    // 获取默认收货地址
-    this.fetchDefaultAddress()
-    
-    // 获取可用优惠券
-    this.fetchAvailableCoupons()
+    this.fetchDefaultAddress(); 
   },
 
-  // 获取默认收货地址
+  onShow: function() {
+    const selectedAddressFromGlobal = app.globalData.selectedAddressForOrder;
+    if (selectedAddressFromGlobal) {
+        this.setData({ address: selectedAddressFromGlobal });
+        delete app.globalData.selectedAddressForOrder; 
+        this.calculateAmount(); 
+    }
+    const chosenCoupon = app.globalData.selectedCouponForOrder;
+    if (chosenCoupon) {
+        this.setData({ selectedCoupon: chosenCoupon });
+        delete app.globalData.selectedCouponForOrder; 
+        this.calculateAmount(); 
+    }
+  },
+
   fetchDefaultAddress: function() {
+    // ... (代码与上一版相同，此处省略以节省空间)
     if (!app.globalData.openid) {
       console.warn('fetchDefaultAddress: openid is null, cannot fetch default address.');
+      this.showLoginModal();
       return;
     }
     
-    // 使用云函数获取地址列表，然后筛选默认地址
     wx.cloud.callFunction({
-      name: 'address',
+      name: 'address', 
       data: {
-        action: 'list',
-        openid: app.globalData.openid
-      },
-      success: res => {
-        console.log('[云函数] [address] [list] 获取地址列表成功:', res.result);
-        if (res.result && res.result.code === 200) {
-          const addresses = res.result.data || [];
-          // 查找默认地址
-          const defaultAddress = addresses.find(addr => addr.isDefault);
-          if (defaultAddress) {
-            this.setData({ address: defaultAddress });
-          } else if (addresses.length > 0) {
-            // 如果没有默认地址，使用第一个地址
-            this.setData({ address: addresses[0] });
-          }
-        }
-      },
-      fail: err => {
-        console.error('[云函数] [address] [list] 调用失败:', err);
+        action: 'list' 
       }
+    }).then(res => {
+      console.log('[orderConfirm] fetchDefaultAddress - 云函数 address list 返回:', res.result);
+      if (res.result && res.result.code === 200) { 
+        const addresses = res.result.data || [];
+        const defaultAddress = addresses.find(addr => addr.isDefault);
+        if (defaultAddress) {
+          this.setData({ address: defaultAddress });
+        } else if (addresses.length > 0) {
+          this.setData({ address: addresses[0] }); 
+        }
+      } else {
+        console.warn("获取默认地址失败:", (res.result && res.result.message) || "云函数返回错误");
+      }
+    }).catch(err => {
+      console.error('[orderConfirm] fetchDefaultAddress - 调用云函数 address list 失败:', err);
     });
   },
 
-  // 获取可用优惠券
-  fetchAvailableCoupons: function() {
+  // **修改点：接收 productAmountNum 作为参数**
+  fetchAvailableCoupons: function(productAmountNum) { 
     if (!app.globalData.openid) {
       console.warn('fetchAvailableCoupons: openid is null, cannot fetch coupons.');
       return;
     }
     
-    const productAmount = parseFloat(this.data.productAmount);
-    
-    // 使用云函数获取可用优惠券
+    // **使用传入的参数**
+    if (isNaN(productAmountNum) || productAmountNum <= 0) { 
+        console.warn(`WorkspaceAvailableCoupons: productAmount (${productAmountNum}) is 0 or NaN, skipping coupon fetch.`);
+        this.setData({ availableCoupons: [], selectedCoupon: null });
+        // 不需要再次调用 calculateAmount，因为它可能导致循环
+        return;
+    }
+
+    console.log('[orderConfirm] fetchAvailableCoupons - Calling coupon cloud function with orderAmount:', productAmountNum);
     wx.cloud.callFunction({
-      name: 'coupon',
+      name: 'coupon', 
       data: {
         action: 'available',
-        openid: app.globalData.openid,
-        amount: productAmount
-      },
-      success: res => {
-        console.log('[云函数] [coupon] [available] 获取可用优惠券成功:', res.result);
-        if (res.result && res.result.code === 200) {
-          this.setData({ availableCoupons: res.result.data || [] });
-        }
-      },
-      fail: err => {
-        console.error('[云函数] [coupon] [available] 调用失败:', err);
+        orderAmount: productAmountNum 
       }
+    }).then(res => {
+      console.log('[orderConfirm] fetchAvailableCoupons - 云函数 coupon available 返回:', res.result);
+      if (res.result && res.result.code === 0) { 
+        const coupons = res.result.data || [];
+        this.setData({ 
+            availableCoupons: coupons,
+            // 每次获取新列表后，检查当前选中的 selectedCoupon 是否仍然有效，如果无效则清空
+            selectedCoupon: coupons.find(c => c._id === (this.data.selectedCoupon && this.data.selectedCoupon._id)) || null
+        });
+        // 如果清空了 selectedCoupon，需要重新计算总价
+        if (!this.data.selectedCoupon && this.data.couponAmount !== '0.00') {
+            this.calculateAmountOnly(); // 创建一个只计算金额不获取优惠券的辅助函数
+        }
+
+      } else {
+        this.setData({ availableCoupons: [], selectedCoupon: null }); 
+        console.warn("获取可用优惠券失败:", (res.result && res.result.message) || "云函数返回错误");
+      }
+    }).catch(err => {
+      this.setData({ availableCoupons: [], selectedCoupon: null }); 
+      console.error('[orderConfirm] fetchAvailableCoupons - 调用云函数 coupon available 失败:', err);
     });
   },
 
-  // 计算订单金额
+  // calculateAmount 现在主要负责计算和触发获取优惠券
   calculateAmount: function() {
-    const orderItems = this.data.orderItems
-    let productAmount = 0
+    const orderItems = this.data.orderItems;
+    let currentProductAmount = 0; // 使用局部变量存储当前计算的商品金额
     
-    // 计算商品总金额
     orderItems.forEach(item => {
-      productAmount += item.price * item.quantity
-    })
+      currentProductAmount += parseFloat(item.price) * parseInt(item.quantity);
+    });
     
-    // 计算运费（这里简化处理，实际可能根据商品重量、地址等计算）
-    const shippingFee = productAmount >= 99 ? 0 : 10
+    const shippingFee = currentProductAmount >= 99 ? 0 : 10;
     
-    // 计算优惠券金额
-    let couponAmount = 0
-    if (this.data.selectedCoupon) {
-      couponAmount = this.data.selectedCoupon.amount
+    let currentCouponAmount = 0; // 局部变量
+    if (this.data.selectedCoupon && this.data.selectedCoupon.amount) {
+      currentCouponAmount = parseFloat(this.data.selectedCoupon.amount);
     }
     
-    // 计算总金额
-    const totalAmount = productAmount + shippingFee - couponAmount
+    const totalAmount = currentProductAmount + shippingFee - currentCouponAmount;
     
     this.setData({
-      productAmount: productAmount.toFixed(2),
+      productAmount: currentProductAmount.toFixed(2),
       shippingFee: shippingFee.toFixed(2),
-      couponAmount: couponAmount.toFixed(2),
-      totalAmount: totalAmount.toFixed(2)
-    })
+      couponAmount: currentCouponAmount.toFixed(2),
+      totalAmount: totalAmount > 0 ? totalAmount.toFixed(2) : '0.00'
+    });
+
+    // **修改点：在金额计算完成后，将准确的商品金额传递给 fetchAvailableCoupons**
+    if (currentProductAmount > 0) {
+        this.fetchAvailableCoupons(currentProductAmount); // 传递金额
+    } else {
+        this.setData({ availableCoupons: [], selectedCoupon: null });
+    }
   },
 
-  // 跳转到地址管理
+  // 新增：一个只计算总额和相关金额，不重新获取优惠券的函数
+  // 用于在用户取消选择优惠券或从弹窗确认选择后更新总价
+  calculateAmountOnly: function() {
+    const orderItems = this.data.orderItems;
+    let currentProductAmount = parseFloat(this.data.productAmount); // 从已有的data中取，避免重复计算商品总额
+    if (isNaN(currentProductAmount)) currentProductAmount = 0;
+        
+    const shippingFee = currentProductAmount >= 99 ? 0 : 10;
+    
+    let currentCouponAmount = 0;
+    if (this.data.selectedCoupon && this.data.selectedCoupon.amount) {
+      currentCouponAmount = parseFloat(this.data.selectedCoupon.amount);
+    }
+    
+    const totalAmount = currentProductAmount + shippingFee - currentCouponAmount;
+    
+    this.setData({
+      // productAmount 和 shippingFee 保持不变，除非商品或地址变了
+      couponAmount: currentCouponAmount.toFixed(2),
+      totalAmount: totalAmount > 0 ? totalAmount.toFixed(2) : '0.00'
+    });
+  },
+
+
   navigateToAddress: function() {
     wx.navigateTo({
-      url: '/pages/address/index?select=true'
-    })
+      url: `/pages/address/index?select=true&currentAddressId=${this.data.address ? this.data.address._id : ''}`
+    });
   },
 
-  // 显示优惠券弹窗
   showCouponPopup: function() {
+    if (this.data.availableCoupons.length === 0) {
+        wx.showToast({ title: '暂无可用优惠券', icon: 'none' });
+        return;
+    }
     this.setData({
       showCoupon: true,
-      tempSelectedCoupon: this.data.selectedCoupon
-    })
+      tempSelectedCoupon: this.data.selectedCoupon 
+    });
   },
 
-  // 隐藏优惠券弹窗
   hideCouponPopup: function() {
-    this.setData({ showCoupon: false })
+    this.setData({ showCoupon: false });
   },
 
-  // 选择优惠券
   selectCoupon: function(e) {
-    const coupon = e.currentTarget.dataset.coupon
-    
-    // 如果点击的是已选中的优惠券，则取消选择
+    const coupon = e.currentTarget.dataset.coupon;
     if (this.data.tempSelectedCoupon && this.data.tempSelectedCoupon._id === coupon._id) {
-      this.setData({ tempSelectedCoupon: null })
+      this.setData({ tempSelectedCoupon: null });
     } else {
-      this.setData({ tempSelectedCoupon: coupon })
+      this.setData({ tempSelectedCoupon: coupon });
     }
   },
 
-  // 确认选择优惠券
+  selectNoCoupon: function() {
+    this.setData({ tempSelectedCoupon: null });
+  },
+
   confirmCoupon: function() {
     this.setData({
-      selectedCoupon: this.data.tempSelectedCoupon,
+      selectedCoupon: this.data.tempSelectedCoupon, 
       showCoupon: false
-    })
-    
-    // 重新计算订单金额
-    this.calculateAmount()
+    });
+    // **修改点：优惠券选择后，只更新金额，不重新获取优惠券列表**
+    this.calculateAmountOnly(); 
   },
 
-  // 备注输入
   onRemarkInput: function(e) {
-    this.setData({ remark: e.detail.value })
+    this.setData({ remark: e.detail.value });
   },
 
-  // 提交订单
   submitOrder: function() {
+    // ... (代码与上一版相同，此处省略)
+    if (this.data.isSubmitting) return; 
+
     if (!app.globalData.openid) {
-      this.showLoginModal()
-      return
+      this.showLoginModal();
+      return;
     }
     
     if (!this.data.address) {
-      wx.showToast({
-        title: '请选择收货地址',
-        icon: 'none'
-      })
-      return
+      wx.showToast({ title: '请选择收货地址', icon: 'none' });
+      return;
+    }
+    if (this.data.orderItems.length === 0) {
+        wx.showToast({ title: '订单中没有商品', icon: 'none' });
+        return;
     }
     
-    wx.showLoading({ title: '提交中...' })
+    this.setData({isSubmitting: true});
+    wx.showLoading({ title: '提交中...' });
     
-    // 构建订单数据
-    const orderItems = this.data.orderItems.map(item => ({
+    const orderItemsPayload = this.data.orderItems.map(item => ({
       productId: item.productId || item._id,
-      quantity: item.quantity,
-      skuInfo: item.skuInfo || {}
+      productName: item.productName,
+      productImage: item.productImage,
+      price: parseFloat(item.price),
+      quantity: parseInt(item.quantity),
+      specId: item.specId || '',
+      specName: item.specName || '',
+      amount: parseFloat(item.price) * parseInt(item.quantity)
     }));
     
-    // 使用云函数创建订单
-    wx.cloud.callFunction({
-      name: 'orders',
-      data: {
+    const orderData = {
         action: 'create',
-        openid: app.globalData.openid,
         addressId: this.data.address._id,
-        items: orderItems,
+        orderItems: orderItemsPayload, 
         couponId: this.data.selectedCoupon ? this.data.selectedCoupon._id : '',
         remark: this.data.remark,
-        totalAmount: parseFloat(this.data.totalAmount),
-        shippingFee: parseFloat(this.data.shippingFee)
-      },
-      success: res => {
-        console.log('[云函数] [orders] [create] 创建订单成功:', res.result);
-        wx.hideLoading();
+        productAmount: parseFloat(this.data.productAmount),
+        shippingFee: parseFloat(this.data.shippingFee),
+        totalAmount: parseFloat(this.data.totalAmount)
+    };
+
+    wx.cloud.callFunction({
+      name: 'orders',
+      data: orderData,
+    }).then(res => {
+      wx.hideLoading();
+      if (res.result && res.result.code === 0) { 
+        const { orderId, orderNo, totalAmount: serverCalculatedTotalAmount } = res.result.data;
         
-        if (res.result && res.result.code === 200) {
-          const orderId = res.result.data.orderId;
-          const orderNo = res.result.data.orderNo;
-          const finalAmount = res.result.data.finalAmount;
-          
-          // 这里可以发起微信支付，但由于支付需要商户号等配置，这里简化处理
-          // 假设支付成功，清除购物车中已购买的商品
-          if (this.data.type === 'cart') {
-            this.clearCartItems();
+        if (this.data.type === 'cart') {
+          const cartItemIds = this.data.orderItems.map(item => item._id).filter(id => !!id);
+          if (cartItemIds.length > 0) {
+            this.clearCartItemsAfterOrder(cartItemIds);
           }
-          
-          // 跳转到支付成功页面
-          wx.redirectTo({
-            url: `/pages/payResult/index?orderId=${orderId}&status=success`
-          });
-          
-          /* 实际支付代码应类似如下：
-          wx.requestPayment({
-            timeStamp: '',
-            nonceStr: '',
-            package: '',
-            signType: 'MD5',
-            paySign: '',
-            success: () => {
-              // 支付成功，清除购物车中已购买的商品
-              if (this.data.type === 'cart') {
-                this.clearCartItems();
-              }
-              
-              // 跳转到支付成功页面
-              wx.redirectTo({
-                url: `/pages/payResult/index?orderId=${orderId}&status=success`
-              });
-            },
-            fail: err => {
-              console.log('支付失败', err);
-              // 跳转到订单详情页
-              wx.redirectTo({
-                url: `/pages/orderDetail/index?id=${orderId}`
-              });
-            }
-          });
-          */
-        } else {
-          wx.showToast({
-            title: res.result.message || '创建订单失败',
-            icon: 'none'
-          });
         }
-      },
-      fail: err => {
-        console.error('[云函数] [orders] [create] 调用失败:', err);
-        wx.hideLoading();
-        wx.showToast({
-          title: '网络请求失败',
-          icon: 'none'
+        
+        console.log(`订单 ${orderNo} 创建成功，金额 ${serverCalculatedTotalAmount}，准备跳转支付结果页`);
+        wx.redirectTo({ 
+          url: `/pages/payResult/index?orderId=${orderId}&status=success&amount=${serverCalculatedTotalAmount}`
         });
+      } else {
+        wx.showToast({ title: (res.result && res.result.message) || '创建订单失败', icon: 'none' });
       }
+    }).catch(err => {
+      wx.hideLoading();
+      console.error('[orderConfirm] submitOrder - 调用云函数 orders create 失败:', err);
+      wx.showToast({ title: '网络请求失败，请重试', icon: 'none' });
+    }).finally(()=>{
+        this.setData({isSubmitting: false});
     });
   },
 
-  // 清除购物车中已购买的商品
-  clearCartItems: function() {
-    const cartItemIds = this.data.orderItems.map(item => item._id);
+  clearCartItemsAfterOrder: function(cartItemIds) {
+    // ... (代码与上一版相同，此处省略)
+    if (!app.globalData.openid || !cartItemIds || cartItemIds.length === 0) return;
     
-    // 使用云函数清空购物车中已购买的商品
     wx.cloud.callFunction({
       name: 'cart',
       data: {
         action: 'removeMultiple',
-        openid: app.globalData.openid,
         ids: cartItemIds
-      },
+      }
+    }).then(res => {
+      if (res.result && res.result.code === 0) { 
+        console.log('[orderConfirm] 购物车已下单商品清除成功');
+        if (typeof app.getCartCount === 'function') {
+          app.getCartCount();
+        }
+      } else {
+        console.warn('[orderConfirm] 清除购物车商品失败:', (res.result && res.result.message));
+      }
+    }).catch(err => {
+      console.error('[orderConfirm] 清除购物车商品云函数调用失败:', err);
+    });
+  },
+
+  showLoginModal: function() {
+    // ... (代码与上一版相同，此处省略)
+    wx.showModal({
+      title: '登录提示',
+      content: '请先登录后再操作。',
+      confirmText: '去登录',
+      showCancel: false,
       success: res => {
-        console.log('[云函数] [cart] [removeMultiple] 清空购物车成功:', res.result);
-        // 更新tabBar购物车数量
-        app.getCartCount();
-      },
-      fail: err => {
-        console.error('[云函数] [cart] [removeMultiple] 调用失败:', err);
+        if (res.confirm) {
+          wx.switchTab({ url: '/pages/user/index' });
+        }
       }
     });
   },
 
-  // 显示登录提示
-  showLoginModal: function() {
-    wx.showModal({
-      title: '提示',
-      content: '请先登录后再操作',
-      confirmText: '去登录',
-      success: res => {
-        if (res.confirm) {
-          wx.switchTab({
-            url: '/pages/user/index'
-          })
-        }
-      }
-    })
-  },
-
-  // 页面卸载时清除缓存数据
   onUnload: function() {
-    wx.removeStorageSync('checkoutItems')
-    wx.removeStorageSync('buyNowItem')
+    // ... (代码与上一版相同，此处省略)
+    if (app.globalData.selectedAddressForOrder) {
+        delete app.globalData.selectedAddressForOrder;
+    }
+    if (app.globalData.selectedCouponForOrder) {
+        delete app.globalData.selectedCouponForOrder;
+    }
+    wx.removeStorageSync('checkoutItems');
+    wx.removeStorageSync('buyNowItem');
   }
-})
+});

@@ -15,8 +15,8 @@ Page({
     isSubmitting: false, // 防止重复提交结算或移除
 
     // 图标路径 - 老板，这里已经更新为您提供的最新云存储路径了！
-    CHOSEN_ICON_PATH: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/全选按钮/选中全选.png',
-    UNCHOSEN_ICON_PATH: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/全选按钮/未选中.png',
+    CHOSEN_ICON_PATH: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/全选按钮/未选中.png',
+    UNCHOSEN_ICON_PATH: 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/全选按钮/选中全选.png',
   },
 
   onLoad: function() {

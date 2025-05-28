@@ -1,80 +1,65 @@
-<view class="page-container">
-  <!--
-  <view class="filter-bar">
-    <view class="sort-item {{sortType === 'default' ? 'active' : ''}}" bindtap="onSortTap" data-type="default">综合</view>
-    <view class="sort-item {{sortType === 'sales' ? 'active' : ''}}" bindtap="onSortTap" data-type="sales">销量</view>
-    <view class="sort-item sort-price {{sortType === 'price' ? 'active' : ''}}" bindtap="onSortTap" data-type="price">
-      价格
-      <view class="sort-arrows" wx:if="{{sortType === 'price'}}">
-        <view class="arrow up {{sortOrder === 'asc' ? 'active' : ''}}"></view>
-        <view class="arrow down {{sortOrder === 'desc' ? 'active' : ''}}"></view>
-      </view>
-    </view>
+<view class="category-page-container">
+  <view wx:if="{{isLoading && products.length === 0 && !isPageError && !isEmpty}}" class="loading-container initial-loading">
+    <image src="/static/images/loading/loading.png" class="loading-image" mode="aspectFit"></image>
+    <text>加载中...</text>
   </view>
-  -->
 
-  <view class="content-wrapper {{showLeftCategories && leftCategories.length > 0 ? 'with-sidebar' : ''}}">
-    <scroll-view scroll-y class="left-sidebar" wx:if="{{showLeftCategories && leftCategories.length > 0}}">
+  <view wx:if="{{isPageError}}" class="error-container">
+    <image src="/static/images/empty/empty_network_error.png" class="error-image" mode="aspectFit"></image>
+    <text class="error-message">{{errorMessage || '加载失败，请稍后再试'}}</text>
+    <button class="retry-button" bindtap="retryLoadProducts">重新加载</button>
+  </view>
+
+  <view wx:if="{{!isLoading || products.length > 0 || isEmpty}}" class="main-content {{showLeftCategories ? 'with-sidebar' : ''}}">
+    <scroll-view wx:if="{{showLeftCategories && leftCategories.length > 0}}" class="left-sidebar" scroll-y="true">
       <view 
-        class="left-category-item {{index === currentLeftCategoryIndex ? 'active' : ''}}"
         wx:for="{{leftCategories}}" 
-        wx:key="_id"  data-index="{{index}}"
-        bindtap="onLeftCategoryTap"
-      >
-        {{item.name}}
+        wx:key="_id" 
+        class="category-item {{currentLeftCategoryIndex == index ? 'active' : ''}}"
+        data-index="{{index}}"
+        bindtap="onLeftCategoryTap">
+        <text>{{item.name}}</text>
       </view>
     </scroll-view>
 
-    <scroll-view 
-      scroll-y 
-      class="right-product-list-container" 
-      bindscrolltolower="onReachBottom" lower-threshold="200"
-      refresher-enabled="true"
-      refresher-triggered="{{isLoading && page === 1}}"
-      bindrefresherrefresh="onPullDownRefresh"
-    >
-      <view class="product-grid" wx:if="{{products.length > 0}}">
-        <view class="product-item-wrapper" wx:for="{{products}}" wx:key="_id" bindtap="onProductTap" data-id="{{item.id || item._id}}">
-          <image class="product-image" src="{{item.mainImage || 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/placeholder.png'}}" mode="aspectFill" lazy-load="true"></image>
-          <view class="product-info">
-            <view class="product-name text-ellipsis-2">{{item.name}}</view>
-            <view class="product-price">
-              <text class="price-current">¥{{item.price}}</text>
-              <text class="price-original" wx:if="{{item.originalPrice && item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+    <scroll-view class="right-content" scroll-y="true" bindscrolltolower="onReachBottom" lower-threshold="100">
+      <block wx:if="{{!isPageError}}">
+        <view wx:if="{{products.length > 0}}" class="product-list-container">
+          <view class="product-grid">
+            <view 
+              class="product-card" 
+              wx:for="{{products}}" 
+              wx:key="_id"  data-id="{{item._id}}" bindtap="onProductTap">
+              <image src="{{item.mainImage}}" class="product-image" mode="aspectFill"></image>
+              <view class="product-info">
+                <view class="name">{{item.name}}</view>
+                <view class="details-line">
+                  <view class="price">¥{{item.price}}</view>
+                  <view class="sales" wx:if="{{item.sales > 0}}">已售{{item.sales}}</view>
+                </view>
+              </view>
             </view>
-            <view class="product-sales" wx:if="{{item.sales !== undefined && item.sales !== null}}">已售{{item.sales}}件</view>
           </view>
-           <view class="product-tag new-tag" wx:if="{{item.isNew}}">新品</view>
-           <view class="product-tag hot-tag" wx:if="{{item.isHot}}">热销</view>
+          
+          <view class="load-more-indicator" wx:if="{{isLoading && products.length > 0}}">
+             <image src="/static/images/loading/loading.png" class="loading-image-small" mode="aspectFit"></image>
+             <text>正在加载更多...</text>
+          </view>
+          <view class="no-more-indicator" wx:if="{{isEnd && products.length > 0 && !isLoading}}">
+            <text>已经到底啦~</text>
+          </view>
         </view>
-      </view>
 
-      <view class="loading-more" wx:if="{{isLoading && products.length > 0}}">
-        <view class="loading-icon"></view>
-        <text>加载中...</text>
-      </view>
-
-      <view class="loading-more no-more" wx:if="{{isEnd && products.length > 0 && !isLoading}}">
-        <text>- 我们是有底线的 -</text>
-      </view>
-
-      <view class="empty-state-container" wx:if="{{(isEmpty || isPageError) && !isLoading && products.length === 0}}">
-        <image class="empty-image" src="{{isPageError ? 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty/empty_network_error.png' : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty/empty_product.png'}}" mode="aspectFit"></image>
-        <text class="empty-text">{{isPageError ? (errorMessage || '加载失败，请稍后重试') : '暂无相关商品哦~'}}</text>
-        <button class="empty-action-btn" wx:if="{{isPageError}}" bindtap="resetAndLoadProducts">点击重试</button>
-        <button class="empty-action-btn" wx:else bindtap="goHome">去逛逛其他</button>
-      </view>
-
-      <view class="skeleton-loading-container" wx:if="{{isLoading && products.length === 0 && page === 1 && !isPageError}}">
-        <view class="product-grid-skeleton">
-            <view class="product-item-skeleton" wx:for="{{[1,2,3,4]}}" wx:key="*this">
-                <view class="skeleton-image"></view>
-                <view class="skeleton-line short"></view>
-                <view class="skeleton-line long"></view>
-            </view>
+        <view wx:if="{{isEmpty && !isLoading && products.length === 0 && !isPageError}}" class="empty-state-container">
+          <empty-state 
+            type="default" 
+            text="该分类下暂无商品哦~" 
+            showButton="{{true}}" 
+            buttonText="去逛逛其他"
+            bind:buttonclick="goHome">
+          </empty-state>
         </view>
-      </view>
-
+      </block>
     </scroll-view>
   </view>
 </view>

@@ -1,4 +1,4 @@
-// 云函数入口文件 for address
+// cloudfunctions/address/index.js
 const cloud = require('wx-server-sdk');
 
 cloud.init({
@@ -8,23 +8,20 @@ cloud.init({
 const db = cloud.database();
 const _ = db.command;
 
-/**
- * 添加新地址
- * 内部函数，由主函数调用
- * @param {object} event - 包含地址信息和用户openid
- * @param {string} event.realOpenid - 【已修改】用户的真实OpenID，由主函数从wxContext获取并传入
- * @param {object} event.addressInfo - 地址信息对象
- */
+// 内部函数 internalAddAddress, internalListAddresses, internalUpdateAddress, 
+// internalDeleteAddress, internalSetDefaultAddress 基本保持不变，
+// 因为它们已经依赖于从 main 函数传入的 realOpenid。
+// 我将列出 main 函数和其中一个内部函数作为示例，其他的类似。
+
 async function internalAddAddress(event) {
-  // 【已修改】从 event 中解构 realOpenid
-  const { addressInfo, realOpenid } = event;
+  const { addressInfo, realOpenid } = event; // realOpenid 由主函数传入
   if (!realOpenid || !addressInfo || !addressInfo.name || !addressInfo.phone || !addressInfo.province || !addressInfo.city || !addressInfo.district || !addressInfo.detail) {
     return { code: 400, message: '参数不完整或无效 (openid 或地址信息缺失)' };
   }
   try {
     const now = new Date();
     const newAddress = {
-      _openid: realOpenid, // 【已修改】使用真实的 openid
+      _openid: realOpenid, // 使用真实的 openid
       name: addressInfo.name,
       phone: addressInfo.phone,
       province: addressInfo.province,
@@ -37,28 +34,20 @@ async function internalAddAddress(event) {
       updateTime: now,
     };
     if (newAddress.isDefault) {
-      // 【已修改】更新操作也使用真实的 openid
       await db.collection('address').where({ _openid: realOpenid, isDefault: true }).update({ data: { isDefault: false, updateTime: new Date() } });
     }
     const res = await db.collection('address').add({ data: newAddress });
-    return { code: 200, message: '地址添加成功', data: { _id: res._id, ...newAddress } };
+    return { code: 200, message: '地址添加成功', data: { _id: res._id, ...newAddress } }; // 之前审阅建议统一返回 code:0, 但此处保持文件原样，仅修正 openid 来源
   } catch (e) {
     console.error('internalAddAddress error:', e);
     return { code: 500, message: '数据库操作失败(add)', error: e.toString() };
   }
 }
 
-/**
- * 获取用户地址列表
- * 内部函数，由主函数调用
- * @param {object} event - 包含用户openid
- * @param {string} event.realOpenid - 【已修改】用户的真实OpenID
- */
 async function internalListAddresses(event) {
-  const { realOpenid } = event; // 【已修改】
+  const { realOpenid } = event;
   if (!realOpenid) { return { code: 400, message: '用户信息缺失 (openid)' }; }
   try {
-    // 【已修改】使用真实的 openid 查询
     const res = await db.collection('address').where({ _openid: realOpenid }).orderBy('updateTime', 'desc').get();
     return { code: 200, message: '获取地址列表成功', data: res.data };
   } catch (e) {
@@ -67,33 +56,22 @@ async function internalListAddresses(event) {
   }
 }
 
-/**
- * 更新地址信息
- * 内部函数，由主函数调用
- * @param {object} event - 包含地址ID、更新内容和用户openid
- * @param {string} event.realOpenid - 【已修改】用户的真实OpenID
- * @param {string} event.addressId - 要更新的地址ID
- * @param {object} event.updates - 要更新的地址字段
- */
 async function internalUpdateAddress(event) {
-  const { addressId, updates, realOpenid } = event; // 【已修改】
+  const { addressId, updates, realOpenid } = event;
   if (!realOpenid || !addressId || !updates) { return { code: 400, message: '参数不完整或无效 (openid, addressId 或 updates 缺失)' }; }
   try {
     const addressToUpdate = { ...updates };
     delete addressToUpdate._id;
-    delete addressToUpdate._openid; // 确保不会尝试更新 _openid
+    delete addressToUpdate._openid; 
     addressToUpdate.updateTime = new Date();
 
     if (updates.isDefault === true) {
-      // 【已修改】使用真实的 openid
       await db.collection('address').where({ _openid: realOpenid, isDefault: true, _id: _.neq(addressId) }).update({ data: { isDefault: false, updateTime: new Date() } });
     }
-    // 【已修改】确保只更新属于该 openid 的地址
     const res = await db.collection('address').where({ _id: addressId, _openid: realOpenid }).update({ data: addressToUpdate });
     if (res.stats.updated > 0) {
       return { code: 200, message: '地址更新成功' };
     } else {
-      // 可能是 addressId 不存在，或者 addressId 存在但不属于此 openid
       const checkExist = await db.collection('address').doc(addressId).get().catch(()=>null);
       if (!checkExist || !checkExist.data) {
         return { code: 404, message: '未找到对应地址' };
@@ -101,7 +79,7 @@ async function internalUpdateAddress(event) {
       if (checkExist.data._openid !== realOpenid) {
         return { code: 403, message: '无权更新此地址' };
       }
-      return { code: 404, message: '未找到对应地址或无需更新' };
+      return { code: 404, message: '未找到对应地址或无需更新' }; // 或者 code: 200, message: '无需更新'
     }
   } catch (e) {
     console.error('internalUpdateAddress error:', e);
@@ -109,29 +87,21 @@ async function internalUpdateAddress(event) {
   }
 }
 
-/**
- * 删除地址
- * 内部函数，由主函数调用
- * @param {object} event - 包含地址ID和用户openid
- * @param {string} event.realOpenid - 【已修改】用户的真实OpenID
- * @param {string} event.addressId - 要删除的地址ID
- */
 async function internalDeleteAddress(event) {
-  const { addressId, realOpenid } = event; // 【已修改】
+  const { addressId, realOpenid } = event;
   if (!realOpenid || !addressId) { return { code: 400, message: '参数不完整或无效 (openid 或 addressId 缺失)' }; }
   try {
     const addressRecord = await db.collection('address').doc(addressId).get().catch(()=>null);
     if (!addressRecord || !addressRecord.data) {
         return { code: 404, message: '地址不存在' };
     }
-    if (addressRecord.data._openid !== realOpenid) { // 【已修改】使用真实的 openid 比较
+    if (addressRecord.data._openid !== realOpenid) {
         return { code: 403, message: '无权删除该地址' };
     }
     const res = await db.collection('address').doc(addressId).remove();
     if (res.stats.removed > 0) {
       return { code: 200, message: '地址删除成功' };
     } else {
-      // 理论上如果上面校验通过，这里应该能删除
       return { code: 404, message: '删除失败，未找到对应地址' };
     }
   } catch (e) {
@@ -140,25 +110,15 @@ async function internalDeleteAddress(event) {
   }
 }
 
-/**
- * 设置默认地址
- * 内部函数，由主函数调用
- * @param {object} event - 包含地址ID和用户openid
- * @param {string} event.realOpenid - 【已修改】用户的真实OpenID
- * @param {string} event.addressId - 要设为默认的地址ID
- */
 async function internalSetDefaultAddress(event) {
-  const { addressId, realOpenid } = event; // 【已修改】
+  const { addressId, realOpenid } = event;
   if (!realOpenid || !addressId) { return { code: 400, message: '参数不完整或无效 (openid 或 addressId 缺失)' }; }
   try {
-    // 【已修改】使用真实的 openid
     await db.collection('address').where({ _openid: realOpenid, isDefault: true }).update({ data: { isDefault: false, updateTime: new Date() } });
-    // 【已修改】确保只更新属于该 openid 的地址
     const res = await db.collection('address').where({ _id: addressId, _openid: realOpenid }).update({ data: { isDefault: true, updateTime: new Date() } });
     if (res.stats.updated > 0) {
       return { code: 200, message: '默认地址设置成功' };
     } else {
-      // 可能是 addressId 不存在，或者 addressId 存在但不属于此 openid
        const checkExist = await db.collection('address').doc(addressId).get().catch(()=>null);
       if (!checkExist || !checkExist.data) {
         return { code: 404, message: '未找到对应地址' };
@@ -175,41 +135,38 @@ async function internalSetDefaultAddress(event) {
 }
 
 exports.main = async (event, context) => {
-  const { action, ...restEventData } = event; // 从 event 中解构出 action
+  const { action, ...restEventData } = event;
   
-  // 【已修改】正确获取 openid
   const wxContext = cloud.getWXContext();
-  const realOpenid = wxContext.OPENID;
+  const realOpenid = wxContext.OPENID; // 关键：从微信调用上下文中获取真实 OpenID
 
-  console.log(`Address function called with action: ${action}, event openid: ${event.openid}, context OPENID: ${realOpenid ? 'present' : 'missing'}`);
+  // 日志记录，注意不要打印敏感信息到生产环境日志，除非必要且已脱敏
+  console.log(`[address CF] Action: ${action}, Caller OpenID: ${realOpenid ? '******' : 'Missing'}`);
 
-  // 对于所有地址操作，几乎都需要 openid
-  // 【已修改】使用从 wxContext 获取的 realOpenid 进行判断
-  if (!realOpenid && action !== 'getPublicAddressConfig') { // 假设一个不需要openid的例外
-    console.error('Address function called without valid OPENID from context for action:', action);
-    return { code: 401, message: '操作地址簿需要有效的用户身份 (address cloud function)' };
+  if (!realOpenid) {
+    console.error('[address CF] Critical: OpenID is missing from wxContext.');
+    return { code: 401, message: '用户身份获取失败，无法执行操作' };
   }
 
-  // 【已修改】将真实的 openid 和剩余参数传递给内部函数
-  const callEvent = { realOpenid, ...restEventData, action }; // 把action也传进去，方便内部函数按需使用
+  // 将真实的 OpenID 和其他事件参数传递给内部处理函数
+  const callEventWithRealOpenid = { realOpenid, ...restEventData, action };
 
   switch (action) {
     case 'add':
-      return internalAddAddress(callEvent);
+      return internalAddAddress(callEventWithRealOpenid);
     case 'list':
-      return internalListAddresses(callEvent);
+      return internalListAddresses(callEventWithRealOpenid);
     case 'update':
-      return internalUpdateAddress(callEvent);
+      return internalUpdateAddress(callEventWithRealOpenid);
     case 'delete':
-      return internalDeleteAddress(callEvent);
+      return internalDeleteAddress(callEventWithRealOpenid);
     case 'setDefault':
-      return internalSetDefaultAddress(callEvent);
+      return internalSetDefaultAddress(callEventWithRealOpenid);
     default:
-      console.warn(`Address function called with unsupported or missing action: ${action}`);
-      // 如果 action 是 undefined (前端没传), 提示 action 缺失
+      console.warn(`[address CF] Unsupported action: ${action}`);
       if (action === undefined) {
-        return { code: 400, message: `地址操作需要提供 action 参数 (address cloud function)` };
+        return { code: 400, message: '地址操作需要提供 action 参数' };
       }
-      return { code: 400, message: `地址操作不支持的 action: ${action} (address cloud function)` };
+      return { code: 400, message: `不支持的操作: ${action}` };
   }
 };

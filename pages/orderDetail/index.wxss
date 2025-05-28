@@ -1,290 +1,300 @@
-/* orderDetail/index.wxss */
-.container {
-  padding-bottom: 120rpx;
+/* modified_project/pages/orderDetail/index.wxss */
+page {
+  background-color: #f4f4f8;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #333;
 }
 
-/* 订单状态样式 */
-.order-status {
+.page-container {
   display: flex;
-  align-items: center;
-  padding: 40rpx 30rpx;
-  background: linear-gradient(to right, #FF8C69, #FF6B6B);
-  color: #fff;
+  flex-direction: column;
+  height: 100%;
 }
+
+/* 加载状态 */
+.full-page-state {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.loading-image {
+  width: 100rpx;
+  height: 100rpx;
+  margin-bottom: 20rpx;
+  animation: spin 1s linear infinite;
+}
+.loading-state text, .empty-state-container text {
+  font-size: 28rpx;
+  color: #888;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.empty-state-container {
+  /* empty-state 组件通常会自己处理内部样式 */
+}
+
+
+.scroll-view-content {
+  flex-grow: 1;
+  padding-bottom: 130rpx; /* 为底部操作栏预留空间 */
+  box-sizing: border-box;
+}
+
+/* 状态头部 */
+.status-header-section {
+  background-color: #FF8C69; /* 主题色 */
+  color: #fff;
+  padding: 40rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* 内容靠左 */
+}
+.status-header-section.completed, 
+.status-header-section.cancelled {
+  background-color: #666; /* 完成或取消状态用深灰色 */
+}
+.status-header-section.unpaid { background-color: #ff976a; }
+.status-header-section.unshipped { background-color: #409eff; }
+.status-header-section.shipped { background-color: #67c23a; }
+
 
 .status-icon {
-  margin-right: 30rpx;
-}
-
-.icon {
   width: 80rpx;
   height: 80rpx;
+  margin-bottom: 15rpx;
 }
-
-.status-info {
-  flex: 1;
-}
-
-.status-text {
-  font-size: 32rpx;
+.status-text-main {
+  font-size: 36rpx;
   font-weight: bold;
   margin-bottom: 10rpx;
 }
-
-.status-desc {
+.status-description {
   font-size: 26rpx;
   opacity: 0.9;
 }
 
-/* 物流信息样式 */
-.logistics-section {
+/* 通用信息区块 */
+.info-section {
   background-color: #fff;
-  margin-bottom: 20rpx;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 25rpx 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
 }
 
-.logistics-info {
-  flex: 1;
+/* 地址区块 */
+.address-section {
+  display: flex;
+  align-items: flex-start; /* 图标和内容垂直对齐 */
 }
-
-.logistics-company {
-  font-size: 28rpx;
-  color: #333;
+.section-icon-wrapper {
+  margin-right: 20rpx;
+  padding-top: 6rpx; /* 微调图标垂直位置 */
+}
+.section-icon {
+  width: 36rpx;
+  height: 36rpx;
+  opacity: 0.7;
+}
+.address-details .user-info {
+  font-size: 30rpx;
+  font-weight: 500;
   margin-bottom: 10rpx;
 }
-
-.logistics-number {
+.address-details .user-info .phone {
+  margin-left: 20rpx;
+  color: #555;
+  font-weight: normal;
+}
+.address-details .address-text {
   font-size: 26rpx;
   color: #666;
-  margin-bottom: 10rpx;
+  line-height: 1.5;
 }
 
-.logistics-status {
-  font-size: 26rpx;
-  color: #FF8C69;
-}
-
-.arrow-right {
-  margin-left: 20rpx;
-}
-
-.arrow-icon {
-  width: 32rpx;
-  height: 32rpx;
-}
-
-/* 通用区块样式 */
-.address-section, .order-info-section, .products-section, .amount-section {
-  background-color: #fff;
+/* 商品列表区块 */
+.product-list-section .section-title-simple {
+  font-size: 30rpx;
+  font-weight: 500;
   margin-bottom: 20rpx;
-}
-
-.section-title {
-  padding: 20rpx 30rpx;
-  font-size: 28rpx;
-  color: #333;
-  font-weight: bold;
+  padding-bottom: 15rpx;
   border-bottom: 1rpx solid #f0f0f0;
 }
-
-.section-content {
-  padding: 20rpx 30rpx;
-}
-
-/* 地址信息样式 */
-.address-info {
+.order-item {
   display: flex;
-  flex-direction: column;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.order-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.order-item:first-child {
+  padding-top: 0;
 }
 
-.address-name-phone {
-  margin-bottom: 10rpx;
-}
-
-.address-name {
-  font-size: 28rpx;
-  color: #333;
-  font-weight: bold;
-  margin-right: 20rpx;
-}
-
-.address-phone {
-  font-size: 26rpx;
-  color: #666;
-}
-
-.address-detail {
-  font-size: 26rpx;
-  color: #333;
-  line-height: 1.4;
-}
-
-/* 订单信息样式 */
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15rpx;
-}
-
-.info-item:last-child {
-  margin-bottom: 0;
-}
-
-.info-label {
-  font-size: 26rpx;
-  color: #666;
-}
-
-.info-value {
-  font-size: 26rpx;
-  color: #333;
-}
-
-.info-value-copy {
-  display: flex;
-  align-items: center;
-}
-
-.copy-btn {
-  font-size: 24rpx;
-  color: #FF8C69;
-  margin-left: 10rpx;
-  padding: 4rpx 10rpx;
-  border: 1rpx solid #FF8C69;
-  border-radius: 4rpx;
-}
-
-/* 商品列表样式 */
-.product-list {
-  border-top: 1rpx solid #f0f0f0;
-  padding-top: 20rpx;
-}
-
-.product-item {
-  display: flex;
-  margin-bottom: 20rpx;
-}
-
-.product-item:last-child {
-  margin-bottom: 0;
-}
-
-.product-image {
+.item-image {
   width: 140rpx;
   height: 140rpx;
   border-radius: 8rpx;
   margin-right: 20rpx;
+  background-color: #f0f0f0;
+  flex-shrink: 0;
 }
-
-.product-info {
+.item-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  min-width: 0;
 }
-
-.product-name {
+.item-name {
   font-size: 28rpx;
   color: #333;
   line-height: 1.4;
+  margin-bottom: 6rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-.product-spec {
+.item-spec {
+  font-size: 22rpx;
+  color: #999;
+  background-color: #f7f7f7;
+  padding: 4rpx 10rpx;
+  border-radius: 4rpx;
+  align-self: flex-start;
+  margin-bottom: 8rpx;
+}
+.item-price-quantity {
+  margin-left: 20rpx; /* 与商品信息隔开 */
+  text-align: right;
+  flex-shrink: 0;
+}
+.item-price {
+  font-size: 26rpx;
+  color: #333;
+  margin-bottom: 5rpx;
+}
+.item-quantity {
   font-size: 24rpx;
   color: #999;
-  margin-top: 10rpx;
 }
 
-.product-price-quantity {
+/* 金额详情区块 */
+.amount-details-section .amount-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10rpx;
-}
-
-.product-price {
-  font-size: 28rpx;
-  color: #ff4d4f;
-}
-
-.product-quantity {
   font-size: 26rpx;
-  color: #999;
+  padding: 10rpx 0;
 }
-
-/* 金额明细样式 */
-.amount-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15rpx;
-  font-size: 26rpx;
+.amount-details-section .amount-item .label {
   color: #666;
 }
-
-.discount {
-  color: #ff4d4f;
+.amount-details-section .amount-item .value {
+  color: #333;
+  font-weight: 500;
 }
-
-.amount-total {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 15rpx;
-  border-top: 1rpx solid #f0f0f0;
-  font-size: 28rpx;
+.amount-details-section .amount-item .discount-value {
+  color: #FF5000; /* 优惠金额用突出颜色 */
+}
+.amount-details-section .amount-item.total-payable .label {
+  font-weight: bold;
   color: #333;
 }
-
-.total-price {
+.amount-details-section .amount-item.total-payable .total-value {
   font-size: 32rpx;
-  color: #ff4d4f;
+  color: #FF5000;
   font-weight: bold;
 }
 
-/* 底部操作栏样式 */
-.bottom-actions {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 100rpx;
-  background-color: #fff;
+/* 订单备注与订单特定信息 */
+.remark-section .label,
+.order-specifics-section .specific-item .label {
+  color: #888;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+.remark-section .value,
+.order-specifics-section .specific-item .value {
+  color: #555;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.order-specifics-section .specific-item {
+  display: flex;
+  font-size: 26rpx;
+  padding: 8rpx 0;
+}
+.order-specifics-section .specific-item .selectable {
+  color: #409eff; /* 可选择/复制的文本颜色 */
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 0 30rpx;
-  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.order-specifics-section .specific-item .copy-hint {
+  font-size: 20rpx;
+  color: #aaa;
+  margin-left: 10rpx;
+}
+
+
+/* 底部操作按钮栏 */
+.safe-area-for-buttons {
+  height: 10rpx; /* 配合 scroll-view的 padding-bottom */
+}
+.action-button-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border-top: 1rpx solid #eee;
+  padding: 20rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); /* 适配iPhone X等底部安全区域 */
+  display: flex;
+  justify-content: flex-end; /* 按钮靠右 */
+  align-items: center;
+  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
   z-index: 100;
 }
-
-.bottom-actions button {
+.bar-btn {
+  height: 68rpx;
+  line-height: 68rpx;
+  font-size: 26rpx;
+  border-radius: 34rpx;
+  padding: 0 35rpx;
   margin-left: 20rpx;
-  font-size: 28rpx;
-  padding: 0 30rpx;
-  height: 70rpx;
-  line-height: 70rpx;
-  border-radius: 35rpx;
+  border: none;
+  text-align: center;
 }
-
-.btn-cancel {
-  color: #666;
-  background-color: #f5f5f5;
-  border: 1rpx solid #ddd;
+.bar-btn[disabled] {
+  opacity: 0.6;
+  background-color: #ccc !important;
+  color: #fff !important;
+  border-color: #ccc !important;
 }
-
-.btn-secondary {
-  color: #666;
+.primary-btn {
+  background-color: #FF8C69; /* 主题色 */
+  color: #fff;
+}
+.secondary-btn {
   background-color: #fff;
+  color: #555;
   border: 1rpx solid #ddd;
 }
-
-.btn-primary {
-  color: #fff;
-  background-color: #FF8C69;
-  border: none;
-}
-
-.btn-pay {
-  color: #fff;
-  background-color: #ff4d4f;
-  border: none;
+.contact-service-btn {
+  /* 可以有特定样式，或者复用 secondary-btn */
+  background-color: #f0f0f0;
+  color: #555;
 }

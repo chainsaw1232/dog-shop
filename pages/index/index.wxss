@@ -1,384 +1,419 @@
-/* pages/index/index.wxss */
+/* modified_project/pages/index/index.wxss (已修改搜索栏部分) */
+page {
+  background-color: #f4f4f8; /* 页面背景色 */
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #333;
+  font-size: 28rpx;
+}
 
-.container {
+.page-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  box-sizing: border-box;
-  background-color: #f4f4f4; /* 页面背景色 */
   min-height: 100vh;
 }
 
-/* 1. 顶部搜索栏 (如果添加的话) */
-.search-bar {
-  width: 100%;
-  padding: 20rpx;
-  background-color: #FF8C69; /* 主题色 */
+/* Loading and Error States */
+.loading-state,
+.error-state {
   display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-.search-bar input {
-  flex-grow: 1;
-  background-color: #fff;
-  border-radius: 30rpx;
-  padding: 10rpx 20rpx;
-  font-size: 28rpx;
-  margin-right: 20rpx;
-}
-
-.search-bar button {
-  background-color: #fff;
-  color: #FF8C69;
-  border: none;
-  border-radius: 30rpx;
-  font-size: 28rpx;
-}
-
-/* 2. 轮播图 */
-.banner-swiper {
-  width: 100%;
-  height: 380rpx; /* 根据实际图片调整高度 */
-}
-
-.banner-item {
-  display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding: 100rpx 40rpx;
+  text-align: center;
+  flex-grow: 1;
+}
+.loading-image { /* 用于页面级加载的大图标 */
+  width: 100rpx;
+  height: 100rpx;
+  margin-bottom: 20rpx;
+  animation: spin 1s linear infinite;
+}
+.loading-image-small { /* 用于列表底部加载更多的小图标 */
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 10rpx;
+  animation: spin 1s linear infinite;
+}
+.error-image {
+  width: 180rpx;
+  height: 180rpx;
+  margin-bottom: 30rpx;
+  opacity: 0.7;
+}
+.error-state text {
+  font-size: 28rpx;
+  color: #888;
+  margin-bottom: 40rpx;
+}
+.retry-button {
+  padding: 15rpx 50rpx;
+  font-size: 30rpx;
+  color: #fff;
+  background-color: #FF8C69;
+  border-radius: 40rpx;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- 真实搜索栏样式 (更新) --- */
+.search-bar-container {
+  background-color: #FF8C69; /* 主题色背景 */
+  padding: 15rpx 20rpx; /* 调整内边距 */
+  display: flex;
+  align-items: center;
+  position: sticky; /* 吸顶效果 */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999; /* 确保在最上层 */
+  box-sizing: border-box;
+}
+.search-input-wrapper {
+  flex-grow: 1;
+  background-color: #fff;
+  border-radius: 32rpx; /* 更圆润的边角 */
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 25rpx; /* 输入框内部左右边距 */
+  margin-right: 15rpx; /* 与搜索按钮的间距 */
+}
+.search-icon-real {
+  width: 30rpx; /* 调整图标大小 */
+  height: 30rpx;
+  margin-right: 12rpx; /* 图标与文字间距 */
+  flex-shrink: 0; /* 防止图标被压缩 */
+  opacity: 0.6; /* 图标颜色淡一点 */
+}
+.search-input {
+  flex-grow: 1;
+  height: 100%;
+  font-size: 26rpx;
+  color: #333;
+  /* 为了给右侧清除图标留出空间，可以添加一些padding-right */
+  /* padding-right: 50rpx; */ /* 根据清除图标的宽度调整 */
+}
+/* 修改 placeholder 样式需要使用小程序特定的选择器 */
+.search-input .wx-input-placeholder, /* 微信原生 */
+.search-input .input-placeholder { /* 支付宝/uniapp等 */
+  color: #bbb;
+  font-size: 26rpx;
+}
+
+/* --- 修改点：新的清除图标样式 --- */
+.search-clear-icon-wrapper {
+  display: flex;         /* 使用 flex 布局使其垂直居中 */
+  align-items: center;   /* 垂直居中 */
+  justify-content: center; /* 水平居中 (如果图标本身不占满wrapper) */
+  padding: 0 10rpx;     /* 为图标提供一些可点击的内边距 */
+  margin-left: 10rpx;    /* 与输入框的间距 */
+  height: 100%;          /* 高度与输入框包装器一致 */
+  flex-shrink: 0;        /* 防止被压缩 */
+}
+.search-clear-icon {
+  /* size 和 color 已经在 WXML 的 icon 标签上设置 */
+  /* 如果需要更精细控制，可以在这里添加 !important */
+}
+/* 如果使用自定义图片作为清除图标 */
+.search-clear-image-icon {
+  width: 32rpx;  /* 示例大小 */
+  height: 32rpx; /* 示例大小 */
+}
+/* --- 清除图标样式结束 --- */
+
+.search-button {
+  background-color: #fff;
+  color: #FF8C69;
+  font-size: 28rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 30rpx;
+  border-radius: 32rpx;
+  border: none;
+  flex-shrink: 0;
+  margin-left: 0; /* 因为wrapper有了右边距 */
+}
+.search-button::after {
+  border: none;
+}
+
+
+/* Banner Swiper */
+.banner-swiper {
+  width: 100%;
+  height: 340rpx; /* 根据您的图片实际比例调整 */
+}
 .banner-image {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
-.banner-placeholder {
-  width: 100%;
-  height: 380rpx;
-  background-color: #e9e9e9;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #999;
-}
-
-/* 3. 分类导航 */
-.category-section {
-  width: 100%;
+/* Category Navigation Section */
+.category-nav-section {
   background-color: #fff;
-  margin-top: 20rpx;
-  padding: 20rpx 0;
+  margin: 20rpx 0; /* 上下外边距，使其与其他模块有间隔 */
+  padding: 30rpx 20rpx 10rpx; /* 内边距 */
+}
+.category-nav-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around; /* 分类项均匀分布 */
+}
+.category-nav-item {
+  width: 20%; /* 假设一行5个 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 25rpx;
+  font-size: 24rpx;
+  color: #333;
+}
+.category-nav-icon {
+  width: 88rpx;
+  height: 88rpx;
+  margin-bottom: 10rpx;
+  border-radius: 50%; /* 图标圆形 */
+  background-color: #f0f0f0; /* 图标未加载出来时的背景 */
+}
+.category-nav-text {
+  text-align: center;
 }
 
-.section-title {
+/* Coupon Section */
+.coupon-section {
+  background-color: #fff;
+  margin: 20rpx 0;
+  padding: 25rpx 0 30rpx 30rpx; /* 调整内边距，左边与标题对齐 */
+}
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 30rpx 20rpx;
+  padding-right: 30rpx; /* 右边距 */
+  margin-bottom: 25rpx; /* 标题与内容的间距 */
+}
+.section-title {
   font-size: 32rpx;
   font-weight: bold;
   color: #333;
 }
-
-.more-link {
-  font-size: 26rpx;
-  color: #666; /* 修改点：颜色从 #999 改为 #666，使其更清晰 */
-  /* 备注：如果 “更多优惠 &gt;” 中的 “&gt;” 直接显示出来，
-     这是 WXML 文件中的文本内容问题，应在 WXML 中将 “&gt;” 改为 “>” 或 “&amp;gt;”
-     例如：<text class="more-link">更多优惠 &gt;</text> 或者 <text class="more-link">更多优惠 &amp;gt;</text>
-     如果希望显示右箭头图标，可以使用 iconfont 或者 image 标签。
-  */
-}
-
-.category-list {
+.section-more {
   display: flex;
-  justify-content: space-around; /* 或者 space-between */
-  align-items: flex-start;
-  flex-wrap: wrap; /* 如果一行显示不下则换行 */
-  padding: 0 10rpx;
-}
-
-.category-item {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  width: 20%; /* 一行显示5个，可根据实际数量调整 */
-  margin-bottom: 20rpx;
-  text-align: center;
-}
-
-.category-icon {
-  width: 90rpx;
-  height: 90rpx;
-  border-radius: 50%; /* 圆形图标 */
-  margin-bottom: 10rpx;
-  background-color: #f0f0f0; /* 图标背景色，防止图片未加载时空白 */
-}
-
-.category-name {
   font-size: 24rpx;
-  color: #333;
+  color: #999;
 }
-
-/* 4. 优惠券区域 */
-.coupon-section {
-  width: 100%;
-  background-color: #fff;
-  margin-top: 20rpx;
-  padding-bottom: 20rpx;
+.arrow-icon {
+  width: 20rpx;
+  height: 20rpx;
+  margin-left: 8rpx;
 }
-
-.coupon-scroll-list {
+.coupon-scroll-view {
   white-space: nowrap; /* 横向滚动关键 */
-  padding: 0 20rpx;
 }
-
 .coupon-item-wrapper {
   display: inline-block; /* 横向排列 */
-  margin-right: 20rpx;
-  width: 500rpx; /* 优惠券宽度 */
+  margin-right: 20rpx; /* 优惠券之间的间距 */
 }
-.coupon-item-wrapper:last-child {
-  margin-right: 0;
-}
-
 .coupon-item {
-  display: flex;
-  align-items: center;
-  background-image: linear-gradient(to right, #ffecd2 0%, #fcb69f 100%); /* 示例渐变背景 */
-  border-radius: 16rpx;
-  padding: 20rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+  width: 280rpx; /* 优惠券宽度 */
   height: 150rpx; /* 优惠券高度 */
-  box-sizing: border-box;
-}
-
-.coupon-value {
+  /* 确保这个云路径是您实际有效的优惠券背景图 */
+  background-image: url('cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/coupon/coupon_bg_example.png'); 
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-radius: 8rpx;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  color: #e53935; /* 优惠金额颜色 */
-  padding-right: 20rpx;
-  border-right: 1rpx dashed #fff; /* 分隔线 */
-  min-width: 120rpx;
+  align-items: center;
+  color: #fff; /* 通常优惠券文字是白色，背景深色 */
+  position: relative;
+  padding: 10rpx;
+  box-sizing: border-box;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2); /* 文字轻微阴影，增强可读性 */
+}
+.coupon-item.received {
+  opacity: 0.7; /* 已领取优惠券变淡 */
+}
+.coupon-value {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+.coupon-value .amount {
+  font-size: 48rpx;
+  margin: 0 4rpx;
+}
+.coupon-condition {
+  font-size: 20rpx;
+  margin-top: 5rpx;
+}
+.coupon-description {
+  font-size: 22rpx;
+  margin-top: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 90%;
   text-align: center;
 }
-
-.amount-symbol {
-  font-size: 28rpx;
-  font-weight: bold;
-}
-
-.amount-number {
-  font-size: 48rpx;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.coupon-info {
-  flex-grow: 1;
-  padding-left: 20rpx;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.coupon-name {
-  font-size: 28rpx;
-  color: #333;
-  font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.coupon-condition,
-.coupon-validity {
-  font-size: 22rpx;
-  color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 4rpx;
-}
-
-.coupon-action {
-  margin-left: auto; /* 使按钮靠右 */
-}
-
 .receive-btn {
-  background-color: #e53935;
-  color: #fff;
+  position: absolute;
+  bottom: 10rpx;
+  right: 10rpx;
+  background-color: #fff;
+  color: #FF8C69; /* 与主题色呼应 */
+  font-size: 20rpx;
+  padding: 5rpx 10rpx;
   border-radius: 20rpx;
-  font-size: 24rpx;
-  padding: 8rpx 16rpx;
-  height: auto;
-  line-height: normal;
+  border: none;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.receive-btn::after {
+  border: none;
+}
+.received-text {
+  position: absolute;
+  bottom: 15rpx;
+  right: 15rpx;
+  font-size: 20rpx;
+  color: #fff;
+  background-color: rgba(0,0,0,0.3);
+  padding: 4rpx 8rpx;
+  border-radius: 4rpx;
 }
 
-/* 5. 商品区域 (新品尝鲜、热销榜单通用) */
+
+/* Product Section (New, Hot) */
 .product-section {
-  width: 100%;
   background-color: #fff;
   margin-top: 20rpx;
-  padding-bottom: 20rpx; /* 给底部留出空间 */
+  padding: 25rpx 30rpx 30rpx; /* 调整内边距 */
 }
-
 .product-grid {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  padding: 0 20rpx;
+  justify-content: space-between; /* 两端对齐，中间留空隙 */
 }
-
-.product-card-item {
-  width: calc(50% - 10rpx); /* 一行显示两个，减去间距 */
-  background-color: #fff;
-  border-radius: 16rpx;
-  overflow: hidden;
+.product-card-wrapper { /* 用于控制每个卡片的宽度和间距 */
+  width: calc(50% - 10rpx); /* 减去gap的一半，gap通过justify-content实现 */
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.08);
+}
+.product-card {
+  background-color: #fff;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
 }
-
 .product-image {
   width: 100%;
-  height: 320rpx; /* 商品图片高度 */
+  height: 320rpx; /* 根据您的商品图片比例调整 */
   background-color: #f0f0f0; /* 图片未加载时的占位背景 */
 }
-
-.product-info {
-  padding: 16rpx;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1; /* 使信息部分占满剩余空间 */
-}
-
 .product-name {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #333;
+  padding: 10rpx 15rpx 5rpx;
   line-height: 1.4;
-  height: 78.4rpx; /* 28rpx * 1.4 * 2行 */
+  height: calc(26rpx * 1.4 * 2); /* 限制两行高度 */
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 最多显示两行 */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  margin-bottom: 8rpx;
 }
-
-.product-price-row {
-  display: flex;
-  align-items: baseline; /* 价格符号和数字基线对齐 */
-  margin-top: auto; /* 将价格推到底部 */
-}
-
 .product-price {
-  font-size: 32rpx;
-  color: #FF6B6B; /* 价格颜色 */
+  padding: 5rpx 15rpx 15rpx;
+  display: flex;
+  align-items: baseline; /* 基线对齐 */
+}
+.current-price {
+  font-size: 30rpx;
+  color: #FF5000; /* 价格颜色 */
   font-weight: bold;
   margin-right: 10rpx;
 }
-
-.product-original-price {
-  font-size: 24rpx;
+.original-price {
+  font-size: 22rpx;
   color: #999;
-  text-decoration: line-through; /* 原价删除线 */
-}
-
-.product-tags {
-  padding: 0 16rpx 10rpx; /* 标签区域的内边距 */
-  display: flex;
-  flex-wrap: wrap; /* 标签多时换行 */
-}
-
-.tag {
-  font-size: 20rpx;
-  padding: 4rpx 10rpx;
-  border-radius: 6rpx;
-  margin-right: 8rpx;
-  margin-bottom: 8rpx; /* 标签之间的间距 */
-}
-
-.new-tag {
-  background-color: #E8F5E9; /* 淡绿色背景 */
-  color: #4CAF50; /* 绿色文字 */
-  border: 1rpx solid #A5D6A7;
-}
-
-.hot-tag {
-  background-color: #FFF3E0; /* 淡橙色背景 */
-  color: #FF9800; /* 橙色文字 */
-  border: 1rpx solid #FFCC80;
+  text-decoration: line-through;
 }
 .sales-tag {
-  background-color: #fdecec;
-  color: #e53935;
-  border: 1rpx solid #f7b1b0;
+  position: absolute; /* 相对于.product-card定位，如果.product-card是relative */
+  top: 20rpx;
+  left: 0; /* 或者调整 left/right */
+  background-color: rgba(255, 100, 0, 0.8); /* 半透明橙色 */
+  color: white;
+  font-size: 20rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 0 15rpx 15rpx 0; /* 右侧圆角 */
 }
 
-
-/* 6. 加载更多提示 */
-.load-more-hint {
-  text-align: center;
-  font-size: 24rpx;
-  color: #999;
-  padding: 20rpx 0;
-}
-
-/* 7. 品牌信息 */
+/* Brand Section */
 .brand-section {
-  width: 100%;
   background-color: #fff;
   margin-top: 20rpx;
   padding: 30rpx;
   display: flex;
   align-items: center;
-  box-sizing: border-box;
 }
-
 .brand-logo {
-  width: 120rpx;
-  height: 120rpx;
-  margin-right: 20rpx;
+  width: 100rpx;
+  height: 100rpx;
   border-radius: 8rpx;
-  background-color: #f0f0f0;
+  margin-right: 20rpx;
+  background-color: #f0f0f0; /* logo未加载时的背景 */
 }
-
 .brand-text {
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  min-width: 0; /* 防止文字过长导致布局问题 */
 }
-
 .brand-title {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: bold;
   color: #333;
   margin-bottom: 8rpx;
 }
-
 .brand-description {
   font-size: 24rpx;
-  color: #666;
-  line-height: 1.5;
+  color: #777;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1; /* 限制一行显示 */
+  -webkit-box-orient: vertical;
+}
+.arrow-icon-brand {
+  width: 24rpx;
+  height: 24rpx;
+  opacity: 0.5;
+  flex-shrink: 0; /* 防止被压缩 */
 }
 
-/* 页面加载状态 */
-.page-loading, .page-error {
+/* Load More for Hot Products */
+.load-more-hot-products,
+.no-more-hot-products {
+  text-align: center;
+  padding: 30rpx 0;
+  font-size: 24rpx;
+  color: #999;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 40rpx;
-  color: #999;
-  font-size: 28rpx;
 }
-.page-error button {
-  margin-top: 20rpx;
-  background-color: #FF8C69;
-  color: white;
+
+
+/* Safe Area Bottom Placeholder */
+.safe-area-bottom {
+  height: env(safe-area-inset-bottom);
+  padding-bottom: 20rpx; /* 额外一些间距，确保内容不被遮挡 */
 }

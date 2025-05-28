@@ -1,5 +1,6 @@
 // pages/coupon/index.js
 const app = getApp();
+const util = require('../../utils/util.js'); // 引入 util.js
 
 Page({
   data: {
@@ -89,20 +90,37 @@ Page({
           console.log('[pages/coupon/index.js] 云函数 coupon 调用成功:', res);
           if (res.result && res.result.code === 0 && res.result.data) {
             const newCoupons = res.result.data.list || [];
-            // 可以在这里对 newCoupons 的日期等进行格式化
+            
             newCoupons.forEach(coupon => {
               if (coupon.startTime) {
-                coupon.startTimeFormatted = new Date(coupon.startTime).toLocaleDateString();
+                // 使用 util.formatTime 来格式化日期
+                coupon.startTimeFormatted = util.formatTime(new Date(coupon.startTime), 'YYYY.MM.DD');
               }
               if (coupon.endTime) {
-                coupon.endTimeFormatted = new Date(coupon.endTime).toLocaleDateString();
+                coupon.endTimeFormatted = util.formatTime(new Date(coupon.endTime), 'YYYY.MM.DD');
+              }
+
+              // **修改点：优先使用 description 字段作为显示信息**
+              // 如果 WXML 中是直接使用 coupon.scope 来显示那一行信息，
+              // 这里的修改会将 coupon.scope 的值替换为 coupon.description (如果存在)
+              // 或者一个更友好的 scope 文本。
+              if (coupon.description && typeof coupon.description === 'string' && coupon.description.trim() !== '') {
+                coupon.displayInfo = coupon.description;
+              } else if (coupon.scope === 'all') {
+                coupon.displayInfo = '全场通用';
+              } else if (coupon.scope === 'category_ids' && coupon.scopeDetails && coupon.scopeDetails.length > 0) {
+                coupon.displayInfo = '指定分类可用'; // 可以进一步处理显示分类名称
+              } else if (coupon.scope === 'product_ids' && coupon.scopeDetails && coupon.scopeDetails.length > 0) {
+                coupon.displayInfo = '指定商品可用'; // 可以进一步处理显示商品名称
+              } else {
+                coupon.displayInfo = '具体使用范围见详情'; // 默认的适用范围文本
               }
             });
 
             this.setData({
               coupons: this.data.page === 1 ? newCoupons : this.data.coupons.concat(newCoupons),
               hasMore: newCoupons.length === this.data.pageSize,
-              isLoading: false // 确保在成功时也设置 isLoading 为 false
+              isLoading: false
             });
             resolve(res.result.data);
           } else {
@@ -111,7 +129,7 @@ Page({
               title: errMsg,
               icon: 'none'
             });
-            this.setData({ isLoading: false }); // 确保在失败时也设置 isLoading 为 false
+            this.setData({ isLoading: false });
             reject(new Error(errMsg));
           }
         },
@@ -121,13 +139,12 @@ Page({
             title: '网络请求失败',
             icon: 'none'
           });
-          this.setData({ isLoading: false }); // 确保在网络失败时也设置 isLoading 为 false
+          this.setData({ isLoading: false });
           reject(err);
+        },
+        complete: () => {
+          // isLoading 已经在 success 和 fail 中处理了
         }
-        // complete 回调不是必须的，因为 success 和 fail 都会执行
-        // complete: () => {
-        //   this.setData({ isLoading: false });
-        // }
       });
     });
   },
@@ -144,37 +161,30 @@ Page({
 
   // 使用优惠券
   useCoupon: function(e) {
-    // const id = e.currentTarget.dataset.id; // 获取优惠券的 _id
-    const coupon = e.currentTarget.dataset.coupon; // 直接获取整个 coupon 对象
+    const coupon = e.currentTarget.dataset.coupon; 
 
     if (!coupon) {
         wx.showToast({ title: '优惠券信息错误', icon: 'none' });
         return;
     }
 
-    // 如果是从订单确认页面跳转过来选择优惠券
     const pages = getCurrentPages();
     const prevPage = pages[pages.length - 2];
 
     if (prevPage && prevPage.route === 'pages/orderConfirm/index') {
-      // 检查优惠券是否可用 (例如，是否已过期，是否满足最小金额 - 虽然理论上列表里应该是可用的)
       if (coupon.status !== 'available' || (coupon.endTime && new Date(coupon.endTime) < new Date())) {
           wx.showToast({ title: '该优惠券已不可用', icon: 'none' });
           return;
       }
       
-      // 将选中的优惠券传回上一页
-      // 确保 prevPage 有 selectCoupon 方法
-      if (typeof prevPage.selectCouponCallback === 'function') { // 假设上一页的方法名叫 selectCouponCallback
-        prevPage.selectCouponCallback(coupon); // 将整个 coupon 对象传递回去
+      if (typeof prevPage.selectCouponCallback === 'function') { 
+        prevPage.selectCouponCallback(coupon); 
         wx.navigateBack();
       } else {
         console.warn('上一页没有 selectCouponCallback 方法');
-        // 如果没有回调，可以尝试直接跳转到首页或提示用户
         wx.switchTab({ url: '/pages/index/index' });
       }
     } else {
-      // 普通查看，跳转到首页去使用
       wx.switchTab({
         url: '/pages/index/index'
       });

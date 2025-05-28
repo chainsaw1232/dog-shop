@@ -1,50 +1,74 @@
-<!--payResult/index.wxml-->
-<view class="container">
-  <!-- 支付结果 -->
-  <view class="result-section">
-    <view class="result-icon">
-      <image src="{{status === 'success' ? 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/pay_success.png' : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/pay_fail.png'}}" class="icon"></image>
-    </view>
-    <view class="result-title">{{status === 'success' ? '支付成功' : '支付失败'}}</view>
-    <view class="result-desc">{{status === 'success' ? '您的订单已支付成功，商家将尽快为您发货' : '支付遇到问题，请稍后重试或联系客服'}}</view>
-    <view class="order-info" wx:if="{{orderDetail}}">
-      <view class="info-item">
-        <text class="info-label">订单编号</text>
-        <text class="info-value">{{orderDetail.orderNumber}}</text>
-      </view>
-      <view class="info-item">
-        <text class="info-label">支付金额</text>
-        <text class="info-value price">¥{{orderDetail.totalAmount}}</text>
-      </view>
-    </view>
+<view class="page-container">
+  <view wx:if="{{isLoading}}" class="loading-state full-page-state">
+    <image class="loading-image" src="/static/images/loading/loading.png" mode="aspectFit"></image>
+    <text>正在加载结果...</text>
   </view>
-  
-  <!-- 操作按钮 -->
-  <view class="action-buttons">
-    <block wx:if="{{status === 'success'}}">
-      <button class="btn-secondary" bindtap="viewOrder">查看订单</button>
-      <button class="btn-primary" bindtap="backToHome">返回首页</button>
-    </block>
-    <block wx:else>
-      <button class="btn-secondary" bindtap="backToOrder">返回订单</button>
-      <button class="btn-primary" bindtap="retryPay">重新支付</button>
-    </block>
-  </view>
-  
-  <!-- 推荐商品 -->
-  <view class="recommend-section" wx:if="{{recommendProducts.length > 0}}">
-    <view class="section-title">为您推荐</view>
-    <view class="product-list">
-      <view class="product-item" wx:for="{{recommendProducts}}" wx:key="id" bindtap="navigateToDetail" data-id="{{item.id}}">
-        <image src="{{item.imageUrl}}" class="product-image" mode="aspectFill"></image>
-        <view class="product-info">
-          <view class="product-name text-ellipsis-2">{{item.name}}</view>
-          <view class="product-price">
-            <text class="price-current">¥{{item.price}}</text>
-            <text class="price-original" wx:if="{{item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+
+  <block wx:else>
+    <view class="result-section">
+      <block wx:if="{{status === 'success'}}">
+        <image class="result-icon" src="/static/images/icons/pay_success.png" mode="aspectFit"></image>
+        <view class="result-title success-title">支付成功！</view>
+        <view class="result-message">您的订单已成功支付，我们会尽快为您安排发货。</view>
+        <view class="order-info-summary" wx:if="{{orderDetail}}">
+          <view class="info-item">
+            <text class="label">订单号：</text>
+            <text class="value">{{orderDetail.orderNo}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">支付金额：</text>
+            <text class="value price-value">¥{{orderDetail.totalAmount}}</text>
+          </view>
+        </view>
+        <view class="action-buttons">
+          <button class="action-btn primary-btn" bindtap="viewOrder">查看订单</button>
+          <button class="action-btn secondary-btn" bindtap="backToHome">返回首页</button>
+        </view>
+      </block>
+
+      <block wx:if="{{status === 'fail'}}">
+        <image class="result-icon" src="/static/images/icons/pay_fail.png" mode="aspectFit"></image>
+        <view class="result-title fail-title">支付失败</view>
+        <view class="result-message">抱歉，您的订单支付失败，请稍后重试或选择其他支付方式。</view>
+        <view class="order-info-summary" wx:if="{{orderDetail}}">
+          <view class="info-item">
+            <text class="label">订单号：</text>
+            <text class="value">{{orderDetail.orderNo}}</text>
+          </view>
+          <view class="info-item" wx:if="{{orderDetail.totalAmount}}">
+            <text class="label">订单金额：</text>
+            <text class="value price-value">¥{{orderDetail.totalAmount}}</text>
+          </view>
+        </view>
+        <view class="action-buttons">
+          <button 
+            class="action-btn primary-btn" 
+            bindtap="retryPay" 
+            disabled="{{isProcessingAction}}">
+            重新支付
+          </button>
+          <button class="action-btn secondary-btn" bindtap="viewOrder">查看订单详情</button>
+        </view>
+      </block>
+    </view>
+
+    <view class="recommend-section" wx:if="{{recommendProducts.length > 0}}">
+      <view class="section-title-bar">
+        <view class="line"></view>
+        <text class="title-text">为你推荐</text>
+        <view class="line"></view>
+      </view>
+      <view class="recommend-product-grid">
+        <view class="product-card-wrapper" wx:for="{{recommendProducts}}" wx:key="_id">
+          <view class="product-card" bindtap="navigateToDetail" data-id="{{item._id}}">
+            <image src="{{item.mainImage || item.imageUrl || '/static/images/products/default_product.png'}}" class="product-image-recommend" mode="aspectFill" lazy-load="true"></image>
+            <view class="product-name-recommend">{{item.name}}</view>
+            <view class="product-price-recommend">
+              <text class="current-price">¥{{item.price}}</text>
+            </view>
           </view>
         </view>
       </view>
     </view>
-  </view>
+  </block>
 </view>

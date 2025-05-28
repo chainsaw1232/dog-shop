@@ -6,63 +6,28 @@ const cartCollection = db.collection('cart');
 const productsCollection = db.collection('products'); 
 const _ = db.command;
 
-// --- 新增：图片路径格式化相关的常量和函数 ---
-// 你的云存储基础路径，确保这个和你云存储中实际的图片存放目录一致
+// --- 图片路径格式化相关的常量和函数 ---
 const CLOUD_IMAGE_BASE_PATH = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images'; 
-// 默认的占位图片，当图片路径无效时使用
-const PLACEHOLDER_IMAGE = CLOUD_IMAGE_BASE_PATH + '/placeholder.png'; // 假设你有一个占位图
+const PLACEHOLDER_IMAGE = CLOUD_IMAGE_BASE_PATH + '/placeholder.png';
 
-/**
- * 辅助函数：格式化图片路径为完整的 File ID
- * @param {string} relativePath - 数据库中存储的图片相对路径或已经是云路径
- * @returns {string} - 完整的云存储 File ID，如果无效则返回占位图路径
- */
 function formatImagePath(relativePath) {
   if (!relativePath || typeof relativePath !== 'string') {
     console.warn('[formatImagePath] 路径无效或非字符串:', relativePath, '将使用占位图。');
     return PLACEHOLDER_IMAGE; 
   }
-  // 如果已经是完整的 cloud:// 路径，则直接返回
   if (relativePath.startsWith('cloud://')) {
     return relativePath;
   }
-
   let pathSegment = relativePath;
-  // 移除路径中可能存在的 "cloud://<env_id>/images/" 前缀，避免重复拼接
-  // 注意：这里的 env_id 应该和你实际的 CLOUD_IMAGE_BASE_PATH 匹配
-  const cloudBasePathPrefix = CLOUD_IMAGE_BASE_PATH + '/'; // 例如 "cloud://env-id.xxxx/images/"
-  if (pathSegment.startsWith(cloudBasePathPrefix)) {
-    // 如果已经是基于 CLOUD_IMAGE_BASE_PATH 的完整路径了，但不是 cloud:// 开头（理论上不应该）
-    // 或者说，如果 relativePath 是 "images/products/product_01.png" 这种，而 CLOUD_IMAGE_BASE_PATH 是 "cloud://env/images"
-    // 那么这里逻辑要调整。
-    // 当前的逻辑是：如果 relativePath 是 "/products/product_01.png" 这种，会拼接成 "cloud://env/images/products/product_01.png"
-    // 如果 relativePath 是 "products/product_01.png" 这种，也会拼接正确。
-  } else if (pathSegment.startsWith('/')) { 
-    // 如果是以 / 开头但不是 CLOUD_IMAGE_BASE_PATH (例如直接是 /products/product_01.png)
-    pathSegment = pathSegment.substring(1); // 移除开头的 /
-  }
-  
-  // 确保不会在 CLOUD_IMAGE_BASE_PATH 和 pathSegment 之间出现双斜杠 "//"
   if (CLOUD_IMAGE_BASE_PATH.endsWith('/') && pathSegment.startsWith('/')) {
     pathSegment = pathSegment.substring(1);
   } else if (!CLOUD_IMAGE_BASE_PATH.endsWith('/') && !pathSegment.startsWith('/') && pathSegment !== '') {
-    // 如果 CLOUD_IMAGE_BASE_PATH 不以 / 结尾，且 pathSegment 不以 / 开头也不为空，则中间需要加 /
      return `${CLOUD_IMAGE_BASE_PATH}/${pathSegment}`;
   }
-  
-  return `${CLOUD_IMAGE_BASE_PATH}${pathSegment}`; // 拼接
+  return `${CLOUD_IMAGE_BASE_PATH}${pathSegment}`;
 }
-// --- 图片路径格式化相关的常量和函数结束 ---
+// --- 图片路径格式化结束 ---
 
-
-/**
- * 添加商品到购物车
- * @param {object} event - 前端传递的参数
- * @param {string} event.productId - 商品ID (必需)
- * @param {number} [event.quantity=1] - 购买数量 (可选, 默认为1)
- * @param {string} [event.specId] - 规格ID (可选)
- * @param {string} openid - 用户 OpenID (由主函数传入)
- */
 async function addToCart(event, openid) {
   const { productId, quantity = 1, specId = '' } = event; 
 
@@ -75,7 +40,7 @@ async function addToCart(event, openid) {
 
   try {
     const productRes = await productsCollection.doc(productId).get();
-    if (!productRes.data) {
+    if (!productRes.data || productRes.data.status !== 'active') { // 检查商品是否存在且上架
       return { code: 404, message: '商品不存在或已下架' };
     }
     const productData = productRes.data;
@@ -83,10 +48,10 @@ async function addToCart(event, openid) {
     let currentPrice = productData.price;
     let currentStock = productData.stock;
     let currentSpecName = '';
-    // --- 修改：优先使用 mainImage，然后是 images[0]，最后是 imageUrl ---
     let rawProductImage = productData.mainImage || 
                          (productData.images && productData.images.length > 0 ? productData.images[0] : 
-                         (productData.imageUrl || '')); // 获取原始图片路径
+                         (productData.imageUrl || '')); 
+    let currentSpecId = specId; // 保存原始specId
 
     if (specId && productData.specs && productData.specs.length > 0) {
       const selectedSpec = productData.specs.find(s => s._id === specId || s.id === specId); 
@@ -96,22 +61,24 @@ async function addToCart(event, openid) {
       currentPrice = selectedSpec.price;
       currentStock = selectedSpec.stock;
       currentSpecName = selectedSpec.name;
-      if (selectedSpec.image) { // 如果规格有独立的图片
-        rawProductImage = selectedSpec.image; // 更新为规格图片路径
+      if (selectedSpec.image) { 
+        rawProductImage = selectedSpec.image;
       }
+    } else if (productData.specs && productData.specs.length > 0 && !specId) {
+        // 如果商品有规格但用户未选择（理论上前端应引导选择）
+        // return { code: 400, message: '请选择商品规格' }; // 或者根据业务逻辑处理
     }
     
-    // --- 修改：格式化图片路径 ---
     const currentProductImage = formatImagePath(rawProductImage);
 
     if (currentStock < quantity) {
-      return { code: 400, message: `商品 "${productData.name}" 库存不足 (仅剩${currentStock}件)` };
+      return { code: 400, message: `商品 "${productData.name}${currentSpecName ? ' ' + currentSpecName : ''}" 库存不足 (仅剩${currentStock}件)` };
     }
 
     const existItemQuery = {
       _openid: openid,
       productId: productId,
-      specId: specId 
+      specId: currentSpecId // 使用保存的 specId 查询
     };
     const existItemRes = await cartCollection.where(existItemQuery).get();
 
@@ -131,12 +98,14 @@ async function addToCart(event, openid) {
           quantity: newQuantity,
           price: currentPrice, 
           productName: productData.name,
-          productImage: currentProductImage, // --- 修改：使用格式化后的图片路径 ---
+          productImage: currentProductImage,
           specName: currentSpecName,
+          // specId 保持不变，因为是基于它查询的
+          stock: currentStock, // 更新快照库存
           updateTime: db.serverDate()
         }
       });
-      console.log(`[云函数 cart.addToCart] 更新购物车商品 ${productId} (规格 ${specId}) 数量为 ${newQuantity}`);
+      console.log(`[云函数 cart.addToCart] 更新购物车商品 ${productId} (规格 ${currentSpecId}) 数量为 ${newQuantity}`);
       return {
         code: 0,
         message: '已更新购物车数量',
@@ -148,17 +117,18 @@ async function addToCart(event, openid) {
         _openid: openid,
         productId: productId,
         productName: productData.name,
-        productImage: currentProductImage, // --- 修改：使用格式化后的图片路径 ---
+        productImage: currentProductImage,
         price: currentPrice,
         quantity: quantity,
-        specId: specId,
+        specId: currentSpecId, // 使用保存的 specId
         specName: currentSpecName,
+        stock: currentStock, // 保存当前规格/商品库存快照
         selected: true, 
         createTime: db.serverDate(),
         updateTime: db.serverDate()
       };
       const addResult = await cartCollection.add({ data: newItemData });
-      console.log(`[云函数 cart.addToCart] 新增商品 ${productId} (规格 ${specId}) 到购物车, _id: ${addResult._id}`);
+      console.log(`[云函数 cart.addToCart] 新增商品 ${productId} (规格 ${currentSpecId}) 到购物车, _id: ${addResult._id}`);
       return {
         code: 0,
         message: '已添加到购物车',
@@ -175,41 +145,157 @@ async function addToCart(event, openid) {
   }
 }
 
-// 获取购物车列表
+// 获取购物车列表 - 已优化
 async function listCart(openid) {
   try {
-    const result = await cartCollection.where({ _openid: openid }).orderBy('createTime', 'desc').get();
-    
-    // --- 新增：格式化购物车中每项商品的图片路径 ---
-    const formattedCartItems = result.data.map(item => {
-      // 确保即使原始 productImage 已经是 cloud:// 路径，formatImagePath 也能正确处理
-      // 或者如果 productImage 存储的是相对路径，则进行转换
-      return {
-        ...item,
-        productImage: formatImagePath(item.productImage) 
-      };
-    });
-    // --- 格式化结束 ---
+    const cartResult = await cartCollection.where({ _openid: openid }).orderBy('createTime', 'desc').get();
+    const cartItems = cartResult.data;
 
-    return { code: 0, message: '获取购物车列表成功', data: formattedCartItems }; // --- 修改：返回格式化后的列表 ---
+    if (cartItems.length === 0) {
+      return { code: 0, message: '购物车为空', data: [] };
+    }
+
+    // 提取所有 productId，去重
+    const productIds = [...new Set(cartItems.map(item => item.productId))];
+    
+    // 一次性查询所有相关商品信息
+    const productsRes = await productsCollection.where({
+      _id: _.in(productIds)
+    }).field({ // 只查询需要的字段
+      name: true,
+      mainImage: true,
+      images: true,
+      price: true,
+      stock: true,
+      status: true,
+      specs: true
+    }).get();
+    
+    const productsMap = new Map();
+    productsRes.data.forEach(p => productsMap.set(p._id, p));
+
+    const updatedCartItems = [];
+    let needsCartDBUpdate = false; // 标记是否有购物车项需要更新数量
+
+    for (const item of cartItems) {
+      const productInfo = productsMap.get(item.productId);
+      let currentItem = { ...item }; // 复制一份，避免直接修改原始数据影响循环
+
+      if (productInfo && productInfo.status === 'active') {
+        currentItem.productName = productInfo.name; // 更新名称
+        let effectivePrice = productInfo.price;
+        let effectiveStock = productInfo.stock;
+        let effectiveImage = productInfo.mainImage || (productInfo.images && productInfo.images.length > 0 ? productInfo.images[0] : '');
+
+        if (item.specId && productInfo.specs && productInfo.specs.length > 0) {
+          const selectedSpec = productInfo.specs.find(s => s._id === item.specId || s.id === item.specId);
+          if (selectedSpec) {
+            effectivePrice = selectedSpec.price;
+            effectiveStock = selectedSpec.stock;
+            currentItem.specName = selectedSpec.name; // 更新规格名
+            if (selectedSpec.image) {
+              effectiveImage = selectedSpec.image;
+            }
+          } else {
+            // 规格找不到了，标记为失效或按默认商品处理
+            console.warn(`Cart item ${item._id} spec ${item.specId} not found for product ${item.productId}.`);
+            currentItem.isInvalid = true; // 添加一个失效标记
+            currentItem.invalidReason = '规格已失效';
+            // 或者将价格和库存设置为0
+            effectivePrice = 0; // 或者item.price (保持旧价格)
+            effectiveStock = 0;
+          }
+        }
+        
+        currentItem.price = parseFloat(effectivePrice.toFixed(2)); // 更新价格
+        currentItem.productImage = formatImagePath(effectiveImage); // 更新图片并格式化
+        currentItem.stock = effectiveStock; // 更新库存快照
+
+        // 检查购物车数量是否超过当前库存
+        if (currentItem.quantity > effectiveStock) {
+          console.warn(`Cart item ${item._id} quantity ${item.quantity} exceeds stock ${effectiveStock}. Adjusting.`);
+          currentItem.quantity = effectiveStock > 0 ? effectiveStock : 0; // 调整数量
+          currentItem.selected = effectiveStock > 0 ? currentItem.selected : false; // 如果没库存了，取消选中
+          if (effectiveStock <= 0) {
+            currentItem.isInvalid = true;
+            currentItem.invalidReason = currentItem.invalidReason || '库存不足';
+          }
+          // 标记此购物车项需要在数据库中更新
+          // 实际项目中，可以在这里直接调用更新数据库的函数，或者收集起来批量更新
+          // 为了简化，这里仅在前端调整，提示用户。更完善的做法是同步回数据库。
+          // await cartCollection.doc(item._id).update({ data: { quantity: currentItem.quantity, selected: currentItem.selected, updateTime: db.serverDate() } });
+          // needsCartDBUpdate = true; // 如果选择异步批量更新，则使用此标记
+        }
+        
+      } else {
+        // 商品找不到了或已下架
+        console.warn(`Product ${item.productId} for cart item ${item._id} not found or not active.`);
+        currentItem.isInvalid = true; // 添加一个失效标记
+        currentItem.invalidReason = '商品已下架或不存在';
+        currentItem.stock = 0; // 库存视为0
+        currentItem.price = 0; // 价格视为0 (或保持旧价格)
+        currentItem.selected = false; // 自动取消选中
+      }
+      updatedCartItems.push(currentItem);
+    }
+
+    // 如果需要更新数据库中的购物车项 (例如数量因库存不足调整)
+    // if (needsCartDBUpdate) { /* ... 批量更新逻辑 ... */ }
+
+    return { code: 0, message: '获取购物车列表成功', data: updatedCartItems };
   } catch (err) {
     console.error('[云函数 cart.listCart] 获取列表失败:', err);
     return { code: 500, message: '获取购物车列表失败' };
   }
 }
 
-// 更新购物车商品 (保持原有逻辑，因为图片路径应该在添加时就已正确)
 async function updateCart(event, openid) {
   const { cartItemId, quantity } = event; 
-  if (!cartItemId || typeof quantity !== 'number' || quantity <= 0) {
+  if (!cartItemId || typeof quantity !== 'number' || quantity < 0) { // 允许数量为0（即删除）
     return { code: 400, message: '参数错误：缺少购物车项目ID或数量无效' };
   }
+
   try {
-    // 考虑：如果商品信息（如价格、图片）可能在后台更新，这里也可以选择重新从 products 表获取并更新到购物车项
-    // 但为了聚焦图片问题，暂时不修改这部分的价格等字段更新逻辑
+    const cartItemRes = await cartCollection.doc(cartItemId).get();
+    if (!cartItemRes.data || cartItemRes.data._openid !== openid) {
+      return { code: 403, message: '无权操作或购物车项不存在' };
+    }
+    const cartItem = cartItemRes.data;
+
+    // 查询最新商品/规格信息以校验库存
+    const productRes = await productsCollection.doc(cartItem.productId).get();
+    if (!productRes.data || productRes.data.status !== 'active') {
+      // 商品已下架，则直接从购物车删除此项
+      await cartCollection.doc(cartItemId).remove();
+      return { code: 404, message: `商品"${cartItem.productName}"已下架，已从购物车移除`, reloaded: true }; // 提示前端刷新
+    }
+    const productData = productRes.data;
+    let currentStock = productData.stock;
+    if (cartItem.specId && productData.specs && productData.specs.length > 0) {
+      const selectedSpec = productData.specs.find(s => s._id === cartItem.specId || s.id === cartItem.specId);
+      if (selectedSpec) {
+        currentStock = selectedSpec.stock;
+      } else {
+        // 规格失效，也从购物车删除
+        await cartCollection.doc(cartItemId).remove();
+        return { code: 404, message: `商品"${cartItem.productName}"规格已失效，已从购物车移除`, reloaded: true };
+      }
+    }
+
+    if (quantity > currentStock) {
+      return { code: 400, message: `库存不足，仅剩${currentStock}件`, currentStock: currentStock };
+    }
+
+    if (quantity === 0) { // 如果数量更新为0，则删除该购物车项
+        await cartCollection.doc(cartItemId).remove();
+        console.log(`[云函数 cart.updateCart] 购物车项 ${cartItemId} 因数量为0被删除`);
+        return { code: 0, message: '商品已从购物车移除' };
+    }
+
     await cartCollection.doc(cartItemId).update({
       data: {
         quantity: quantity,
+        stock: currentStock, // 更新库存快照
         updateTime: db.serverDate()
       }
     });
@@ -221,7 +307,6 @@ async function updateCart(event, openid) {
   }
 }
 
-// 删除购物车商品 (保持原有逻辑)
 async function deleteFromCart(event, openid) {
   const { cartItemId } = event; 
   if (!cartItemId) {
@@ -241,11 +326,15 @@ async function deleteFromCart(event, openid) {
   }
 }
 
-// 获取购物车商品数量 (保持原有逻辑)
 async function getCartCount(openid) {
   try {
-    const result = await cartCollection.where({ _openid: openid }).count();
-    console.log(`[云函数 cart.getCartCount] 用户 ${openid} 的购物车数量: ${result.total}`);
+    // 只统计有效商品（未标记为isInvalid的）
+    // 如果购物车项没有isInvalid字段，则默认有效
+    const result = await cartCollection.where({ 
+        _openid: openid,
+        isInvalid: _.neq(true) // 排除isInvalid为true的项
+    }).count();
+    console.log(`[云函数 cart.getCartCount] 用户 ${openid} 的有效购物车数量: ${result.total}`);
     return { code: 0, message: '获取购物车数量成功', data: { count: result.total } };
   } catch (err) {
     console.error('[云函数 cart.getCartCount] 获取数量失败:', err);
@@ -253,7 +342,6 @@ async function getCartCount(openid) {
   }
 }
 
-// 批量删除购物车项 (保持原有逻辑)
 async function removeMultipleCartItems(event, openid) {
     const { ids } = event; 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -269,7 +357,8 @@ async function removeMultipleCartItems(event, openid) {
         if (result.stats.removed > 0) {
             return { code: 0, message: '部分或全部选中商品已从购物车移除' };
         } else {
-            return { code: 404, message: '未找到需要移除的商品，或无权限操作' };
+            // 即使没有找到匹配的（可能已经被其他操作删除了），也返回成功，避免前端困惑
+            return { code: 0, message: '操作完成，未找到符合条件的商品或已移除' };
         }
     } catch (err) {
         console.error('[云函数 cart.removeMultipleCartItems] 批量删除失败:', err);

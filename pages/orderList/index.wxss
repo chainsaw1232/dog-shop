@@ -1,228 +1,266 @@
-/* orderList/index.wxss */
-.container {
-  padding-bottom: 30rpx;
+/* pages/orderList/index.wxss */
+page {
+  background-color: #f4f4f4;
+  height: 100%;
 }
 
-/* 订单状态选项卡样式 */
-.order-tabs {
+.order-list-page {
   display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB',
+    'Microsoft Yahei', sans-serif;
+}
+
+.tabs {
+  display: flex;
+  justify-content: space-around;
   background-color: #fff;
-  padding: 0 20rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-  position: sticky;
-  top: 0;
+  /* border-bottom: 1rpx solid #eee; */
+  height: 88rpx;
+  align-items: center;
+  /* position: fixed; 使其随页面滚动，或者设置为 fixed 并给 scroll-view 加 padding-top */
+  /* top: 0; */
+  /* left: 0; */
+  /* right: 0; */
   z-index: 10;
+  width: 100%;
 }
 
 .tab-item {
   flex: 1;
-  height: 80rpx;
-  line-height: 80rpx;
   text-align: center;
-  font-size: 28rpx;
+  font-size: 28rpx; /* 调整字体大小以适应5个tab */
   color: #666;
+  line-height: 88rpx;
   position: relative;
+  padding: 0 10rpx; /* 给tab之间一些间距 */
 }
 
 .tab-item.active {
-  color: #FF8C69;
+  color: #ff8c69; /* 主题色 */
   font-weight: bold;
 }
 
 .tab-item.active::after {
   content: '';
+  display: block;
   position: absolute;
-  bottom: 0;
+  bottom: 10rpx; /* 调整下划线位置 */
   left: 50%;
   transform: translateX(-50%);
-  width: 40rpx;
-  height: 4rpx;
-  background-color: #FF8C69;
+  width: 50rpx; /* 调整下划线宽度 */
+  height: 6rpx;
+  background-color: #ff8c69; /* 主题色 */
+  border-radius: 3rpx;
 }
 
-/* 订单列表样式 */
-.order-list {
-  padding: 20rpx;
+.order-scroll-container {
+  flex: 1; /* 关键：让滚动区域占据剩余的所有空间 */
+  box-sizing: border-box;
+  height: 0; /* 与 flex:1 配合，确保高度正确计算，尤其在某些安卓机型 */
+  /* 当 scroll-view 内部只有一个 empty-state-container 时，用以下flex布局使其居中 */
+  display: flex;
+  flex-direction: column;
 }
 
-.order-item {
+/* 订单组样式 */
+.order-group {
   background-color: #fff;
-  border-radius: 12rpx;
-  margin-bottom: 20rpx;
-  padding: 30rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  margin: 20rpx 20rpx 0;
+  border-radius: 16rpx;
+  padding: 0 30rpx;
 }
 
-/* 订单头部样式 */
 .order-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20rpx;
-  padding-bottom: 20rpx;
+  align-items: center;
+  padding: 20rpx 0;
   border-bottom: 1rpx solid #f0f0f0;
 }
 
-.order-number {
+.order-no {
   font-size: 26rpx;
-  color: #999;
+  color: #666;
 }
 
 .order-status {
   font-size: 26rpx;
-  color: #FF8C69;
   font-weight: bold;
 }
+.order-status.unpaid { color: #ff8c69; } /* 待付款 - 主题色 */
+.order-status.unshipped { color: #ffa500; } /* 待发货 - 橙色 */
+.order-status.shipped { color: #1aad19; } /* 待收货 - 绿色 */
+.order-status.completed { color: #999; } /* 已完成 - 灰色 */
+.order-status.cancelled { color: #aaa; } /* 已取消 - 深灰色 */
 
-/* 订单商品样式 */
-.order-products {
-  margin-bottom: 20rpx;
-}
 
 .product-item {
   display: flex;
-  margin-bottom: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
 }
-
 .product-item:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
 }
 
 .product-image {
-  width: 140rpx;
-  height: 140rpx;
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 8rpx;
   margin-right: 20rpx;
+  background-color: #f0f0f0; /* 占位背景色 */
 }
 
 .product-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: space-between; /* 让名称和规格上下分布 */
 }
 
 .product-name {
   font-size: 28rpx;
   color: #333;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1.4;
+  margin-bottom: 8rpx;
 }
 
 .product-spec {
   font-size: 24rpx;
   color: #999;
-  margin-top: 10rpx;
 }
 
-.product-price-quantity {
+.product-price-qty {
+  text-align: right;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10rpx;
+  flex-direction: column;
+  justify-content: space-between; /* 价格和数量上下分布 */
+  min-width: 100rpx; /* 防止被压缩 */
 }
 
 .product-price {
   font-size: 28rpx;
-  color: #ff4d4f;
-}
-
-.product-quantity {
-  font-size: 26rpx;
-  color: #999;
-}
-
-/* 订单金额样式 */
-.order-amount {
-  display: flex;
-  justify-content: space-between;
-  padding: 20rpx 0;
-  border-top: 1rpx solid #f0f0f0;
-  border-bottom: 1rpx solid #f0f0f0;
-  font-size: 26rpx;
-  color: #666;
-}
-
-.order-amount text:last-child {
-  font-weight: bold;
   color: #333;
 }
 
-/* 订单操作样式 */
+.product-quantity {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.order-footer {
+  padding: 20rpx 0;
+  border-top: 1rpx solid #f0f0f0;
+  margin-top: -1rpx; /* 抵消product-item最后一个的border */
+}
+.order-body .product-item:last-child + .order-footer {
+  border-top: none; /* 如果最后一个商品项后直接是footer，则footer不需要上边框 */
+}
+/* 如果订单只有一个商品，product-item没有下边框，则footer需要上边框 */
+.order-body .product-item:first-child:last-child + .order-footer {
+   border-top: 1rpx solid #f0f0f0;
+}
+
+
+.total-info {
+  text-align: right;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.total-amount {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #ff6633; /* 突出总金额颜色 */
+}
+
 .order-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20rpx;
+  align-items: center;
 }
 
-.order-actions button {
-  margin-left: 20rpx;
-  font-size: 26rpx;
-  padding: 0 30rpx;
+.action-btn {
+  min-width: 160rpx;
   height: 60rpx;
   line-height: 60rpx;
+  text-align: center;
   border-radius: 30rpx;
+  font-size: 26rpx;
+  padding: 0 20rpx;
+  margin-left: 20rpx;
+  background-color: #ff8c69; /* 主题色 */
+  color: #fff;
+  border: 1rpx solid #ff8c69; /* 主题色 */
 }
 
-.btn-cancel {
-  color: #666;
-  background-color: #f5f5f5;
-  border: 1rpx solid #ddd;
-}
-
-.btn-secondary {
-  color: #666;
+.action-btn.plain {
   background-color: #fff;
-  border: 1rpx solid #ddd;
+  color: #ff8c69; /* 主题色 */
+  border: 1rpx solid #ff8c69; /* 主题色 */
 }
-
-.btn-primary {
-  color: #fff;
-  background-color: #FF8C69;
+.action-btn::after {
   border: none;
 }
 
-.btn-pay {
-  color: #fff;
-  background-color: #ff4d4f;
-  border: none;
-}
 
-/* 空状态样式 */
-.empty-state {
+/* 空状态、加载中、无更多数据的样式 */
+.empty-state-container {
+  /* 关键：让空状态容器在滚动区域内垂直水平居中 */
+  flex-grow: 1; /* 占据滚动区域的剩余空间 */
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 100rpx 0;
-  background-color: #fff;
-  margin: 20rpx;
-  border-radius: 12rpx;
+  text-align: center;
+  padding-bottom: 100rpx; /* 底部留些空间，避免太贴底 */
 }
 
 .empty-image {
-  width: 200rpx;
-  height: 200rpx;
+  width: 240rpx; /* 调整图片大小 */
+  height: 240rpx;
   margin-bottom: 30rpx;
 }
 
-.empty-state text {
+.empty-text {
   font-size: 28rpx;
   color: #999;
-  margin-bottom: 30rpx;
+  margin-bottom: 40rpx;
 }
 
-.btn-to-shop {
-  width: 200rpx;
-  height: 70rpx;
-  line-height: 70rpx;
-  background-color: #FF8C69;
+.empty-button {
+  background-color: #ff8c69; /* 主题色 */
   color: #fff;
-  font-size: 28rpx;
-  border-radius: 35rpx;
+  font-size: 30rpx;
+  padding: 18rpx 50rpx;
+  border-radius: 40rpx;
+  border: none;
+  line-height: 1;
+}
+.empty-button::after {
+  border: none;
 }
 
-/* 加载更多样式 */
-.loading-more, .no-more {
+.loading-indicator,
+.no-more-data {
   text-align: center;
-  padding: 30rpx 0;
-  font-size: 26rpx;
   color: #999;
+  font-size: 26rpx;
+  padding: 30rpx 0;
 }
+.loading-indicator { /* 当列表为空时的初次加载提示也居中 */
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+

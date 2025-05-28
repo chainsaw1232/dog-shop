@@ -1,4 +1,4 @@
-// 云函数入口文件 for address
+// cloudfunctions/review/index.js
 const cloud = require('wx-server-sdk');
 
 cloud.init({
@@ -7,211 +7,312 @@ cloud.init({
 
 const db = cloud.database();
 const _ = db.command;
+const $ = db.command.aggregate;
 
 /**
- * 添加新地址
- * 
- * @param {object} event - 包含地址信息和用户openid
- * @param {string} event.openid - 用户的OpenID
- * @param {object} event.addressInfo - 地址信息对象
- * @param {string} event.addressInfo.name - 收件人姓名
- * @param {string} event.addressInfo.phone - 联系电话
- * @param {string} event.addressInfo.province - 省份
- * @param {string} event.addressInfo.city - 城市
- * @param {string} event.addressInfo.district - 区/县
- * @param {string} event.addressInfo.detail - 详细地址
- * @param {string} [event.addressInfo.tag] - 地址标签，如"家"、"公司"
- * @param {boolean} [event.addressInfo.isDefault=false] - 是否设为默认地址
- * 
- * @returns {object} 返回结果对象
- * @returns {number} result.code - 状态码，200表示成功
- * @returns {string} result.message - 状态描述
- * @returns {object} [result.data] - 成功时返回的数据，包含新增地址信息
- * @returns {object} [result.error] - 失败时的错误信息
+ * 更新商品的平均评分和评价总数
+ * @param {string} productId - 商品ID
  */
-async function internalAddAddress(event) {
-  const { addressInfo, openid } = event; // openid 由主函数传入
-  if (!openid || !addressInfo || !addressInfo.name || !addressInfo.phone || !addressInfo.province || !addressInfo.city || !addressInfo.district || !addressInfo.detail) {
-    return { code: 400, message: '参数不完整或无效 (openid 或地址信息缺失)' };
+async function updateProductRating(productId) {
+  if (!productId) {
+    console.warn('[updateProductRating] Product ID is missing.');
+    return;
   }
   try {
-    const now = new Date();
-    const newAddress = {
-      _openid: openid, name: addressInfo.name, phone: addressInfo.phone, province: addressInfo.province, city: addressInfo.city,
-      district: addressInfo.district, detail: addressInfo.detail, tag: addressInfo.tag || '', isDefault: addressInfo.isDefault || false,
-      createTime: now, updateTime: now,
+    const stats = await db.collection('reviews').aggregate()
+      .match({
+        productId: productId
+      })
+      .group({
+        _id: '$productId',
+        avgRating: $.avg('$rating'),
+        totalReviews: $.sum(1)
+      })
+      .end();
+
+    if (stats.list && stats.list.length > 0) {
+      const { avgRating, totalReviews } = stats.list[0];
+      await db.collection('products').doc(productId).update({
+        data: {
+          avgRating: parseFloat(avgRating.toFixed(1)), // 保留一位小数
+          reviewCount: totalReviews // 可以额外存储评价总数
+        }
+      });
+      console.log(`[updateProductRating] Product ${productId} rating updated: avgRating=${avgRating}, totalReviews=${totalReviews}`);
+    } else {
+      // 如果没有评价了（比如评价被删除了），可以考虑将评分重置或设为特定值
+      await db.collection('products').doc(productId).update({
+        data: {
+          avgRating: 0, // 或者 5，根据业务逻辑
+          reviewCount: 0
+        }
+      });
+      console.log(`[updateProductRating] Product ${productId} has no reviews, rating reset.`);
+    }
+  } catch (error) {
+    console.error(`[updateProductRating] Failed for product ${productId}:`, error);
+  }
+}
+
+/**
+ * 批量添加评价 (针对一个订单中的多个商品)
+ * @param {object} event
+ * @param {string} event.orderId - 订单ID
+ * @param {Array<object>} event.reviews - 评价对象数组, [{ productId, rating, content, images (fileIDs) }]
+ * @param {boolean} event.isAnonymous - 是否匿名
+ * @param {string} openid - 调用者 openid
+ */
+async function addBatchReviews(event, openid) {
+  const { orderId, reviews, isAnonymous } = event;
+
+  if (!orderId || !Array.isArray(reviews) || reviews.length === 0) {
+    return { code: 400, message: '参数错误：缺少订单ID或评价内容' };
+  }
+
+  const transaction = await db.startTransaction();
+  try {
+    // 1. 验证订单状态，确保订单存在、属于该用户、且未被评价过
+    const orderRes = await transaction.collection('orders').doc(orderId).get();
+    if (!orderRes.data) {
+      await transaction.rollback();
+      return { code: 404, message: '订单不存在' };
+    }
+    if (orderRes.data._openid !== openid) {
+      await transaction.rollback();
+      return { code: 403, message: '无权评价此订单' };
+    }
+    // 允许的状态，例如 'completed' 或 'toEvaluate'
+    if (orderRes.data.status !== 'completed' && orderRes.data.status !== 'toEvaluate') {
+      await transaction.rollback();
+      return { code: 400, message: '当前订单状态无法评价' };
+    }
+    if (orderRes.data.hasReviewed) {
+      // 注意：如果允许追评，这里的逻辑需要调整
+      await transaction.rollback();
+      return { code: 400, message: '该订单已评价过' };
+    }
+
+    const userRes = await transaction.collection('users').where({ _openid: openid }).limit(1).get();
+    const userId = (userRes.data && userRes.data.length > 0) ? userRes.data[0]._id : openid; // Fallback to openid if no user doc _id
+
+    const reviewPromises = [];
+    const productIdsToUpdateRating = new Set(); // 存储需要更新评分的商品ID
+
+    for (const reviewData of reviews) {
+      if (!reviewData.productId || typeof reviewData.rating !== 'number' || reviewData.rating < 1 || reviewData.rating > 5 || typeof reviewData.content !== 'string') {
+        // 跳过无效的评价项，或在此处决定是否回滚整个事务
+        console.warn('[addBatchReviews] Invalid review item skipped:', reviewData);
+        continue;
+      }
+      
+      const newReview = {
+        _openid: openid,
+        userId: userId, // 关联用户表的 _id
+        orderId: orderId,
+        productId: reviewData.productId,
+        productName: reviewData.productName || '', // 前端可以传入商品名快照
+        productImage: reviewData.productImage || '', // 前端可以传入商品图片快照
+        rating: reviewData.rating,
+        content: reviewData.content.trim(),
+        images: Array.isArray(reviewData.images) ? reviewData.images : [], // 图片fileID数组
+        isAnonymous: !!isAnonymous,
+        createTime: db.serverDate(),
+        updateTime: db.serverDate(),
+        // specInfo: reviewData.specInfo || null, // (可选) 如果评价区分规格
+      };
+      reviewPromises.push(transaction.collection('reviews').add({ data: newReview }));
+      productIdsToUpdateRating.add(reviewData.productId);
+    }
+
+    if (reviewPromises.length === 0) {
+        await transaction.rollback();
+        return { code: 400, message: '没有有效的评价内容可提交' };
+    }
+
+    await Promise.all(reviewPromises);
+
+    // 2. 更新订单的评价状态
+    await transaction.collection('orders').doc(orderId).update({
+      data: {
+        hasReviewed: true,
+        updateTime: db.serverDate()
+      }
+    });
+
+    await transaction.commit(); // 先提交事务，确保评价和订单状态写入
+
+    // 3. 独立更新所有相关商品的平均评分 (事务提交后执行，避免长时间占用事务)
+    for (const productId of productIdsToUpdateRating) {
+      await updateProductRating(productId);
+    }
+
+    return { code: 0, message: '评价提交成功', data: { count: reviewPromises.length } };
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error('[addBatchReviews] Error:', error);
+    return { code: 500, message: '评价提交失败，请稍后再试', error: error.message || error.errMsg };
+  }
+}
+
+/**
+ * 获取商品评价列表
+ * @param {object} event
+ * @param {string} event.productId - 商品ID
+ * @param {string} [event.type='all'] - 评价类型：all, good, medium, bad, hasImage
+ * @param {number} [event.page=1] - 页码
+ * @param {number} [event.pageSize=10] - 每页数量
+ */
+async function listReviewsByProduct(event) {
+  const { productId, type = 'all', page = 1, pageSize = 10 } = event;
+
+  if (!productId) {
+    return { code: 400, message: '缺少商品ID参数' };
+  }
+
+  try {
+    const query = { productId: productId };
+    if (type === 'good') query.rating = _.gte(4);
+    else if (type === 'medium') query.rating = 3;
+    else if (type === 'bad') query.rating = _.lte(2);
+    else if (type === 'hasImage') query.images = _.exists(true).and(_.neq([]));
+
+    const skip = (Number(page) - 1) * Number(pageSize);
+
+    const totalRes = await db.collection('reviews').where(query).count();
+    const total = totalRes.total;
+
+    let reviewsList = [];
+    if (total > 0) {
+        reviewsList = await db.collection('reviews')
+        .where(query)
+        .orderBy('createTime', 'desc')
+        .skip(skip)
+        .limit(Number(pageSize))
+        .get();
+        reviewsList = reviewsList.data;
+    }
+    
+    // 丰富评价的用户信息
+    const userIds = reviewsList.filter(r => !r.isAnonymous && r.userId).map(r => r.userId);
+    let usersMap = {};
+    if (userIds.length > 0) {
+        const usersRes = await db.collection('users').where({
+            _id: _.in([...new Set(userIds)]) // 去重
+        }).field({ nickName: true, avatarUrl: true }).get();
+        usersRes.data.forEach(u => usersMap[u._id] = u);
+    }
+
+    const defaultAnonymousAvatar = 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/avatar/default_avatar.png'; //
+
+    const formattedReviews = reviewsList.map(review => {
+        let userDisplay = {
+            nickName: '匿名用户',
+            avatarUrl: defaultAnonymousAvatar
+        };
+        if (!review.isAnonymous && review.userId && usersMap[review.userId]) {
+            userDisplay.nickName = usersMap[review.userId].nickName || '用户';
+            userDisplay.avatarUrl = usersMap[review.userId].avatarUrl || defaultAnonymousAvatar;
+        }
+        return {
+            ...review,
+            createTimeFormatted: review.createTime ? new Date(review.createTime).toISOString().split('T')[0] : '',
+            user: userDisplay
+        };
+    });
+
+
+    return {
+      code: 0,
+      message: '获取评价列表成功',
+      data: {
+        list: formattedReviews,
+        total,
+        page: Number(page),
+        pageSize: Number(pageSize),
+        totalPages: Math.ceil(total / Number(pageSize))
+      }
     };
-    if (newAddress.isDefault) {
-      await db.collection('address').where({ _openid: openid, isDefault: true }).update({ data: { isDefault: false, updateTime: new Date() } });
-    }
-    const res = await db.collection('address').add({ data: newAddress });
-    return { code: 200, message: '地址添加成功', data: { _id: res._id, ...newAddress } };
-  } catch (e) { console.error('internalAddAddress error:', e); return { code: 500, message: '数据库操作失败', error: e }; }
+  } catch (error) {
+    console.error('[listReviewsByProduct] Error:', error);
+    return { code: 500, message: '获取评价列表失败', error: error.message || error.errMsg };
+  }
 }
 
 /**
- * 获取用户地址列表
- * 
- * @param {object} event - 包含用户openid
- * @param {string} event.openid - 用户的OpenID
- * 
- * @returns {object} 返回结果对象
- * @returns {number} result.code - 状态码，200表示成功
- * @returns {string} result.message - 状态描述
- * @returns {Array} [result.data] - 成功时返回的地址列表数组
- * @returns {object} [result.error] - 失败时的错误信息
+ * 获取商品评价统计
+ * @param {object} event
+ * @param {string} event.productId - 商品ID
  */
-async function internalListAddresses(event) {
-  const { openid } = event;
-  if (!openid) { return { code: 400, message: '用户信息缺失 (openid)' }; }
-  try {
-    const res = await db.collection('address').where({ _openid: openid }).orderBy('updateTime', 'desc').get();
-    return { code: 200, message: '获取地址列表成功', data: res.data };
-  } catch (e) { console.error('internalListAddresses error:', e); return { code: 500, message: '数据库查询失败', error: e }; }
-}
-
-/**
- * 更新地址信息
- * 
- * @param {object} event - 包含地址ID、更新内容和用户openid
- * @param {string} event.openid - 用户的OpenID
- * @param {string} event.addressId - 要更新的地址ID
- * @param {object} event.updates - 要更新的地址字段
- * @param {string} [event.updates.name] - 收件人姓名
- * @param {string} [event.updates.phone] - 联系电话
- * @param {string} [event.updates.province] - 省份
- * @param {string} [event.updates.city] - 城市
- * @param {string} [event.updates.district] - 区/县
- * @param {string} [event.updates.detail] - 详细地址
- * @param {string} [event.updates.tag] - 地址标签
- * @param {boolean} [event.updates.isDefault] - 是否设为默认地址
- * 
- * @returns {object} 返回结果对象
- * @returns {number} result.code - 状态码，200表示成功，404表示未找到地址
- * @returns {string} result.message - 状态描述
- * @returns {object} [result.error] - 失败时的错误信息
- */
-async function internalUpdateAddress(event) {
-  const { addressId, updates, openid } = event;
-  if (!openid || !addressId || !updates) { return { code: 400, message: '参数不完整或无效 (openid, addressId 或 updates 缺失)' }; }
-  try {
-    const addressToUpdate = { ...updates }; delete addressToUpdate._id; delete addressToUpdate._openid; addressToUpdate.updateTime = new Date();
-    if (updates.isDefault === true) {
-      await db.collection('address').where({ _openid: openid, isDefault: true, _id: _.neq(addressId) }).update({ data: { isDefault: false, updateTime: new Date() } });
-    }
-    const res = await db.collection('address').doc(addressId).update({ data: addressToUpdate });
-    if (res.stats.updated > 0) { return { code: 200, message: '地址更新成功' }; }
-    else { return { code: 404, message: '未找到对应地址或无需更新' }; }
-  } catch (e) { console.error('internalUpdateAddress error:', e); return { code: 500, message: '数据库操作失败', error: e }; }
-}
-
-/**
- * 删除地址
- * 
- * @param {object} event - 包含地址ID和用户openid
- * @param {string} event.openid - 用户的OpenID
- * @param {string} event.addressId - 要删除的地址ID
- * 
- * @returns {object} 返回结果对象
- * @returns {number} result.code - 状态码，200表示成功，403表示无权限，404表示未找到
- * @returns {string} result.message - 状态描述
- * @returns {object} [result.error] - 失败时的错误信息
- */
-async function internalDeleteAddress(event) {
-  const { addressId, openid } = event;
-  if (!openid || !addressId) { return { code: 400, message: '参数不完整或无效 (openid 或 addressId 缺失)' }; }
-  try {
-    const addressRecord = await db.collection('address').doc(addressId).get();
-    if (!addressRecord.data || addressRecord.data._openid !== openid) { return { code: 403, message: '无权删除该地址或地址不存在' }; }
-    const res = await db.collection('address').doc(addressId).remove();
-    if (res.stats.removed > 0) { return { code: 200, message: '地址删除成功' }; }
-    else { return { code: 404, message: '未找到对应地址' }; }
-  } catch (e) { console.error('internalDeleteAddress error:', e); return { code: 500, message: '数据库操作失败', error: e }; }
-}
-
-/**
- * 设置默认地址
- * 
- * @param {object} event - 包含地址ID和用户openid
- * @param {string} event.openid - 用户的OpenID
- * @param {string} event.addressId - 要设为默认的地址ID
- * 
- * @returns {object} 返回结果对象
- * @returns {number} result.code - 状态码，200表示成功，404表示未找到
- * @returns {string} result.message - 状态描述
- * @returns {object} [result.error] - 失败时的错误信息
- */
-async function internalSetDefaultAddress(event) {
-  const { addressId, openid } = event;
-  if (!openid || !addressId) { return { code: 400, message: '参数不完整或无效 (openid 或 addressId 缺失)' }; }
-  try {
-    await db.collection('address').where({ _openid: openid }).update({ data: { isDefault: false, updateTime: new Date() } });
-    const res = await db.collection('address').doc(addressId).update({ data: { isDefault: true, updateTime: new Date() } });
-    if (res.stats.updated > 0) { return { code: 200, message: '默认地址设置成功' }; }
-    else { return { code: 404, message: '未找到对应地址或设置失败' }; }
-  } catch (e) { console.error('internalSetDefaultAddress error:', e); return { code: 500, message: '数据库操作失败', error: e }; }
-}
-
-/**
- * 地址管理主函数，根据 action 分发任务
- * 
- * @param {object} event - 前端调用时传递的参数
- * @param {string} event.action - 操作类型，支持 'add', 'list', 'update', 'delete', 'setDefault'
- * @param {string} event.openid - 用户的OpenID
- * @param {object} [event.addressInfo] - 添加地址时的地址信息
- * @param {string} [event.addressId] - 操作特定地址时的地址ID
- * @param {object} [event.updates] - 更新地址时的更新内容
- * @param {object} context - 云函数上下文
- * 
- * @returns {object} 返回结果对象，具体结构取决于各个内部函数
- * 
- * @example
- * // 前端添加地址示例
- * wx.cloud.callFunction({
- *   name: 'address',
- *   data: {
- *     action: 'add',
- *     openid: 'user_openid',
- *     addressInfo: {
- *       name: '张三',
- *       phone: '13800138000',
- *       province: '北京市',
- *       city: '北京市',
- *       district: '海淀区',
- *       detail: '中关村大街1号',
- *       isDefault: true,
- *       tag: '公司'
- *     }
- *   }
- * });
- */
-exports.main = async (event, context) => {
-  const { action, openid, ...restEventData } = event;
-
-  // 对于所有地址操作，几乎都需要 openid
-  if (!openid && action !== 'getPublicAddressConfig') { // 假设一个不需要openid的例外
-    console.error('Address function called without openid for action:', action);
-    return { code: 401, message: '操作地址簿需要有效的 OpenID (address cloud function)' };
+async function getReviewStatsByProduct(event) {
+  const { productId } = event;
+  if (!productId) {
+    return { code: 400, message: '缺少商品ID参数' };
   }
 
-  // 将 openid 和剩余参数传递给内部函数
-  const callEvent = { openid, ...restEventData };
+  try {
+    const productRes = await db.collection('products').doc(productId).field({ avgRating: true }).get();
+    const productAvgRating = (productRes.data && typeof productRes.data.avgRating === 'number') ? productRes.data.avgRating : 0;
 
-  console.log(`Address function called with action: ${action}, openid: ${openid ? 'present' : 'missing'}`);
+    const countQuery = { productId: productId };
+    
+    const totalPromise = db.collection('reviews').where(countQuery).count();
+    const goodCountPromise = db.collection('reviews').where({ ...countQuery, rating: _.gte(4) }).count();
+    const mediumCountPromise = db.collection('reviews').where({ ...countQuery, rating: 3 }).count();
+    const badCountPromise = db.collection('reviews').where({ ...countQuery, rating: _.lte(2) }).count();
+    const hasImageCountPromise = db.collection('reviews').where({ ...countQuery, images: _.exists(true).and(_.neq([])) }).count();
 
-  switch (action) {
-    case 'add':
-      return internalAddAddress(callEvent);
-    case 'list':
-      return internalListAddresses(callEvent);
-    case 'update':
-      return internalUpdateAddress(callEvent);
-    case 'delete':
-      return internalDeleteAddress(callEvent);
-    case 'setDefault':
-      return internalSetDefaultAddress(callEvent);
+    const [totalRes, goodRes, mediumRes, badRes, hasImageRes] = await Promise.all([
+        totalPromise, goodCountPromise, mediumCountPromise, badCountPromise, hasImageCountPromise
+    ]);
+
+    const total = totalRes.total;
+    const goodCount = goodRes.total;
+    const mediumCount = mediumRes.total;
+    const badCount = badRes.total;
+    const hasImageCount = hasImageRes.total;
+    
+    const goodRate = total > 0 ? Math.round((goodCount / total) * 100) : (productAvgRating >=4 ? 100 : 0); // 如果没评价，好评率基于商品平均分或给100
+
+    return {
+      code: 0,
+      message: '获取评价统计成功',
+      data: {
+        total,
+        goodCount,
+        mediumCount,
+        badCount,
+        hasImageCount,
+        goodRate,
+        avgRating: productAvgRating // 直接从商品表读取，由 updateProductRating 维护
+      }
+    };
+  } catch (error) {
+    console.error('[getReviewStatsByProduct] Error:', error);
+    return { code: 500, message: '获取评价统计失败', error: error.message || error.errMsg };
+  }
+}
+
+
+// 云函数入口函数
+exports.main = async (event, context) => {
+  const wxContext = cloud.getWXContext();
+  const openid = wxContext.OPENID; // 用户 openid
+
+  if (!openid && event.action !== 'listByProduct' && event.action !== 'getStatsByProduct') { // 部分查询接口可以不强求登录
+    return { code: 401, message: '用户未登录或登录状态异常' };
+  }
+  
+  console.log(`[Review CF] Action: ${event.action}, Caller OpenID: ${openid ? '******' : 'N/A'}`);
+
+  switch (event.action) {
+    case 'addBatch':
+      return await addBatchReviews(event, openid);
+    case 'listByProduct':
+      return await listReviewsByProduct(event); // openid 不是必须的，但可以用来判断用户是否点赞过某条评价等扩展功能
+    case 'getStatsByProduct':
+      return await getReviewStatsByProduct(event);
     default:
-      console.warn(`Address function called with unsupported action: ${action}`);
-      return { code: 400, message: `地址操作不支持的 action: ${action} (address cloud function)` };
+      return { code: 400, message: '未知操作类型' };
   }
 };

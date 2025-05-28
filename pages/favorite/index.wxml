@@ -1,44 +1,70 @@
-<!--favorite/index.wxml-->
-<view class="container">
-  <!-- 收藏列表 -->
-  <view class="favorite-list" wx:if="{{favorites.length > 0}}">
-    <view class="favorite-item" wx:for="{{favorites}}" wx:key="id">
-      <view class="product-info" bindtap="navigateToDetail" data-id="{{item.productId}}">
-        <image src="{{item.productImage}}" class="product-image" mode="aspectFill"></image>
-        <view class="product-detail">
-          <view class="product-name text-ellipsis-2">{{item.productName}}</view>
-          <view class="product-price">
-            <text class="price-current">¥{{item.price}}</text>
-            <text class="price-original" wx:if="{{item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+<view class="page-container">
+  <view wx:if="{{isLoading && favorites.length === 0}}" class="loading-state full-page-state">
+    <image class="loading-image" src="/static/images/loading/loading.png" mode="aspectFit"></image>
+    <text>正在加载收藏...</text>
+  </view>
+
+  <block wx:if="{{!isLoading && favorites.length === 0}}">
+    <view class="empty-state-container full-page-state">
+      <empty-state 
+        type="favorite" 
+        text="您的收藏夹还是空的哦~" 
+        buttonText="去逛逛宝贝" 
+        showButton="{{true}}"
+        bind:buttonclick="navigateToShop">
+      </empty-state>
+    </view>
+  </block>
+
+  <scroll-view 
+    wx:if="{{!isLoading && favorites.length > 0}}" 
+    class="favorite-list-scroll" 
+    scroll-y="true" 
+    bindscrolltolower="onReachBottom" 
+    lower-threshold="100">
+    <view class="favorite-list">
+      <view class="favorite-item" wx:for="{{favorites}}" wx:key="_id" data-id="{{item.productId}}" bindtap="navigateToDetail">
+        <image class="product-image" src="{{item.productImage || '/static/images/products/default_product.png'}}" mode="aspectFill" lazy-load="true"></image>
+        <view class="product-details">
+          <view class="product-name">{{item.productName}}</view>
+          <view class="product-status" wx:if="{{item.status !== 'active'}}">（已下架或失效）</view>
+          <view class="product-price-line">
+            <text class="current-price">¥{{item.price}}</text>
+            <text class="original-price" wx:if="{{item.originalPrice && item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
           </view>
-          <view class="product-sales">销量 {{item.sales}}</view>
-        </view>
-      </view>
-      <view class="favorite-actions">
-        <view class="action-btn btn-cart" catchtap="addToCart" data-id="{{item.productId}}">
-          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/cart_add.png" class="action-icon"></image>
-        </view>
-        <view class="action-btn btn-delete" catchtap="removeFavorite" data-id="{{item.id}}">
-          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/delete.png" class="action-icon"></image>
+          <view class="product-actions">
+            <button 
+              class="action-btn remove-btn" 
+              size="mini" 
+              bindtap="removeFavorite" 
+              data-favoriteid="{{item._id}}" 
+              data-productid="{{item.productId}}"
+              hover-class="button-hover-light"
+              disabled="{{isProcessingAction}}">
+              取消收藏
+            </button>
+            <button 
+              class="action-btn add-cart-btn" 
+              size="mini" 
+              bindtap="addToCart" 
+              data-id="{{item.productId}}"
+              hover-class="button-hover"
+              disabled="{{isProcessingAction || item.status !== 'active'}}">
+              加入购物车
+            </button>
+          </view>
         </view>
       </view>
     </view>
-  </view>
-  
-  <!-- 空状态 -->
-  <view class="empty-state" wx:else>
-    <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/empty_favorite.png" class="empty-image"></image>
-    <text>暂无收藏商品</text>
-    <button class="btn-to-shop" bindtap="navigateToShop">去逛逛</button>
-  </view>
-  
-  <!-- 加载更多 -->
-  <view class="loading-more" wx:if="{{favorites.length > 0 && hasMore}}">
-    <text wx:if="{{isLoading}}">加载中...</text>
-    <text wx:else bindtap="loadMore">点击加载更多</text>
-  </view>
-  
-  <view class="no-more" wx:if="{{favorites.length > 0 && !hasMore}}">
-    <text>没有更多收藏了</text>
-  </view>
+
+    <view class="list-bottom-indicator">
+      <view wx:if="{{isLoading && favorites.length > 0}}" class="load-more">
+        <image class="loading-image-small" src="/static/images/loading/loading.png" mode="aspectFit"></image>
+        <text>正在加载更多...</text>
+      </view>
+      <view wx:if="{{!hasMore && favorites.length > 0 && !isLoading}}" class="no-more">
+        <text>— 已经到底啦 —</text>
+      </view>
+    </view>
+  </scroll-view>
 </view>

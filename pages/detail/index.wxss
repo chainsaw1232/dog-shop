@@ -1,568 +1,687 @@
 /* pages/detail/index.wxss */
-.page-container {
-  background-color: #f8f8f8;
+.detail-page {
+  background-color: #f4f4f4; /* 页面背景色，与首页和分类页统一 */
   min-height: 100vh;
+  padding-bottom: 130rpx; /* 为底部操作栏和iPhone X等机型的安全区域留出空间 */
   box-sizing: border-box;
-  /* padding-bottom: 100rpx; */ /* 由 .bottom-placeholder 占位 */
 }
 
-.product-swiper {
-  width: 100%;
-  height: 750rpx;
-}
-
-.swiper-image {
-  width: 100%;
-  height: 100%;
-}
-
-.product-info-section {
-  background-color: #fff;
-  padding: 20rpx 30rpx;
-  margin-bottom: 20rpx;
-}
-
-.price-share-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10rpx;
-}
-
-.price-container {
-  display: flex;
-  align-items: baseline;
-}
-
-.current-price {
-  font-size: 44rpx;
-  color: #ff4d4f;
-  font-weight: bold;
-  margin-right: 10rpx;
-}
-
-.original-price {
-  font-size: 26rpx;
-  color: #999;
-  text-decoration: line-through;
-}
-
-.share-button {
-  background-color: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
+/* 加载和错误状态 (与之前提供的样式保持一致) */
+.loading-container, .error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 20rpx;
-  color: #666;
-  line-height: normal;
+  justify-content: center;
+  padding-top: 30vh;
+  text-align: center;
 }
-.share-button::after {
-  border: none;
+.loading-image { /* 沿用之前的加载图 */
+  width: 120rpx; /* 可以根据实际加载图调整 */
+  height: 120rpx;
+  margin-bottom: 20rpx;
 }
-
-.share-icon {
-  width: 36rpx;
-  height: 36rpx;
-  margin-bottom: 4rpx;
+.error-container {
+  background-color: #fff;
+  margin: 20rpx 24rpx;
+  border-radius: 16rpx;
+  padding: 80rpx 40rpx;
+  min-height: 300rpx;
 }
-
-.product-name {
+.error-image {
+  width: 160rpx;
+  height: 160rpx;
+  margin-bottom: 30rpx;
+}
+.error-message {
+  font-size: 30rpx;
+  color: #e64340; /* 错误提示颜色 */
+  margin-bottom: 50rpx;
+  line-height: 1.6;
+}
+.retry-button {
+  background-color: #FF8C69; /* 主题色 */
+  color: white;
   font-size: 32rpx;
+  padding: 18rpx 60rpx;
+  border-radius: 45rpx;
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 4rpx 10rpx rgba(255, 140, 105, 0.3);
+}
+.retry-button:active {
+  background-color: #e67e5f;
+}
+
+/* 商品图片轮播 */
+.product-swiper {
+  width: 100%;
+  height: 750rpx; /* 保持1:1的宽高比，适合商品主图 */
+  background-color: #e0e0e0; /* 图片加载时的占位背景 */
+}
+.swiper-image-item .product-image-swiper {
+  width: 100%;
+  height: 100%;
+}
+.product-image-placeholder { /* 单张图片或无图片时的占位 */
+  width: 100%;
+  height: 750rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+}
+.product-image-placeholder .product-image-swiper {
+    width: 100%;
+    height: 100%;
+}
+
+
+/* 通用卡片样式 */
+.section-card {
+  background-color: #fff;
+  margin: 20rpx 24rpx;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+.section-card:first-child { /* 第一个内容卡片（通常是商品信息）可以与轮播图更紧密 */
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* 商品基本信息卡片 */
+.product-info-card {
+  background-color: #fff;
+  padding: 30rpx 24rpx; /* 增加内边距 */
+  margin: 0 24rpx;
+  position: relative;
+  /* 如果希望商品信息卡片压在轮播图下方一点点，可以设置 margin-top: -16rpx; 并确保轮播图有合适的 z-index 或者商品信息卡片有更高的 z-index 和背景色 */
+  /* margin-top: -16rpx; */
+  /* border-radius: 16rpx; */ /* 如果独立于轮播图下方，则需要圆角 */
+  margin-bottom: 20rpx;
+}
+.price-section {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 12rpx;
+}
+.current-price {
+  font-size: 48rpx;
+  color: #FF6F00; /* 主题强调色 */
+  font-weight: bold;
+  margin-right: 16rpx;
+  line-height: 1;
+}
+.original-price {
+  font-size: 28rpx;
+  color: #999;
+  text-decoration: line-through;
+  line-height: 1;
+}
+.title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+.product-name {
+  font-size: 36rpx; /* 增大标题字号 */
   color: #333;
   font-weight: bold;
   line-height: 1.4;
-  margin-bottom: 10rpx;
+  flex: 1;
+  margin-right: 20rpx;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.sales-stock-row {
+.share-button-icon {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: normal;
+  border: none;
+  font-size: 20rpx;
+  color: #666;
+  width: auto; /* 宽度自适应 */
+  min-width: 60rpx; /* 最小宽度，确保点击区域 */
+}
+.share-button-icon::after { /* 移除按钮默认边框 */
+  border: none;
+}
+.share-button-icon image {
+  width: 40rpx;
+  height: 40rpx;
+  margin-bottom: 4rpx;
+}
+.sales-stock-info {
   font-size: 24rpx;
   color: #999;
-}
-
-.section {
-  background-color: #fff;
-  padding: 20rpx 30rpx;
-  margin-bottom: 20rpx;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 28rpx;
-  color: #333;
-}
-.section:last-child {
-  margin-bottom: 0;
 }
 
-.section-title-label {
-  font-weight: bold;
+/* 规格选择与服务卡片 */
+.specs-selection-card, .service-guarantee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 88rpx;
 }
-.spec-selection-section .spec-text {
-  color: #666;
+.label-title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  margin-right: 20rpx;
+  white-space: nowrap; /* 防止"服务"这样的文字换行 */
+}
+.detail-title { /* 商品详情部分的标题特定样式 */
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  margin-bottom: 20rpx;
+  font-size: 30rpx; /* 稍大一点 */
+}
+.selected-text {
   flex: 1;
+  font-size: 28rpx;
+  color: #666;
   text-align: right;
   margin-right: 10rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.arrow-right-icon {
+.arrow-right {
   width: 24rpx;
   height: 24rpx;
+  opacity: 0.5; /* 箭头可以低调一点 */
 }
-
-.service-section .section-title-label {
-  align-self: flex-start;
-}
-.service-items-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.service-items {
   flex: 1;
-  margin-left: 20rpx;
+  display: flex;
+  flex-wrap: wrap; /* 允许多个服务项换行 */
+  justify-content: flex-end; /* 服务项靠右对齐 */
+  align-items: center;
 }
 .service-item {
-  display: flex;
-  align-items: center;
   font-size: 24rpx;
-  color: #666;
+  color: #555; /* 服务文字颜色 */
   margin-left: 20rpx;
-  margin-bottom: 10rpx;
+  position: relative;
+  padding-left: 24rpx; /* 为图标留出空间 */
+  line-height: 1.2; /* 确保图标和文字对齐 */
 }
-.service-item:last-child {
-  margin-bottom: 0;
+.service-item::before { /* 使用对勾图标 */
+  content: '✓';
+  color: #FF6F00; /* 主题色 */
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: bold;
+  font-size: 28rpx;
 }
-.service-icon {
-  width: 28rpx;
-  height: 28rpx;
-  margin-right: 8rpx;
+.service-item:first-child {
+  margin-left: 0; /* 第一个服务项不需要左边距 */
 }
 
 
-.review-preview-section {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-.section-header {
+/* 评价区 (沿用之前的样式，可根据截图微调) */
+.review-stats-section .review-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
   margin-bottom: 20rpx;
 }
-.view-all-reviews {
+.review-stats-section .review-header .title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+.review-stats-section .review-header .rating-line {
   display: flex;
   align-items: center;
-  font-size: 24rpx;
+}
+.review-stats-section .good-rate {
+  font-size: 26rpx;
+  color: #FF6F00;
+  margin-right: 10rpx;
+}
+.review-stats-section .view-all {
+  font-size: 26rpx;
   color: #999;
 }
-.review-list {
-  width: 100%;
+.review-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20rpx; /* 标签与第一条评价的间距 */
 }
-.review-item {
-  padding: 20rpx 0;
-  border-top: 1rpx solid #f0f0f0;
+.review-tags .tag {
+  font-size: 24rpx;
+  background-color: #FFF3E0;
+  color: #FF8F00;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  margin-right: 16rpx;
+  margin-bottom: 16rpx; /* 标签之间的下边距，用于换行 */
+  cursor: pointer;
 }
-.review-item:first-child {
-  border-top: none;
-  padding-top: 0;
+.no-reviews {
+  font-size: 26rpx;
+  color: #999;
+  text-align: center;
+  padding: 30rpx 0;
+}
+
+.review-list-section .review-item {
+  padding: 25rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.review-list-section .review-item:last-child {
+  border-bottom: none; /* 最后一条评价无下边框 */
 }
 .review-user-info {
   display: flex;
   align-items: center;
-  margin-bottom: 10rpx;
+  margin-bottom: 12rpx;
 }
-.user-avatar {
-  width: 60rpx;
-  height: 60rpx;
+.review-user-info .avatar {
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
-  margin-right: 15rpx;
+  margin-right: 16rpx;
+  background-color: #eee; /* 头像加载前占位 */
 }
-.user-name-rating {
+.review-user-info .nickname-rating {
   flex: 1;
 }
-.user-name {
-  font-size: 26rpx;
-  color: #333;
+.review-user-info .nickname {
+  font-size: 28rpx;
+  color: #555;
   display: block;
+  margin-bottom: 4rpx;
 }
-.review-rating {
-  font-size: 22rpx;
-  color: #ffb400;
+.rating-stars image { /* 星星图标样式 */
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 4rpx;
 }
-.review-time {
-  font-size: 22rpx;
-  color: #999;
+.review-user-info .review-time {
+  font-size: 24rpx;
+  color: #aaa;
 }
 .review-content {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #333;
-  line-height: 1.5;
-  margin-bottom: 10rpx;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.6;
+  margin-bottom: 15rpx;
+  /* 为了避免截图中的长英文单词不换行，可以加上这个，但通常中文不需要 */
+  /* word-break: break-all; */
 }
 .review-images {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
 }
 .review-image-item {
-  width: 120rpx;
-  height: 120rpx;
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 8rpx;
-  background-color: #eee;
+  margin-right: 12rpx;
+  margin-bottom: 12rpx;
+  background-color: #f0f0f0; /* 图片加载前占位 */
 }
-.no-reviews {
-  text-align: center;
+.review-image-item:nth-child(4n) { /* 每行最多4张图，第4张图无右边距 (如果一行放不下4个，此规则可能不适用) */
+  /* margin-right: 0; */ 
+}
+.review-spec {
+  font-size: 22rpx;
   color: #999;
+  background-color: #f7f7f7;
+  padding: 4rpx 10rpx;
+  border-radius: 4rpx;
+  display: inline-block;
+  margin-top: 10rpx;
+}
+.load-more-reviews, .loading-reviews, .no-more-reviews {
+  text-align: center;
   font-size: 26rpx;
+  color: #999;
   padding: 30rpx 0;
 }
+.loading-reviews image { /* 如果有加载更多的小菊花 */
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 10rpx;
+  vertical-align: middle;
+}
 
-.product-detail-description-section {
-  display: block;
-  padding-bottom: 30rpx;
-}
-.product-detail-description-section .detail-title {
-  margin-bottom: 20rpx;
-  display: block;
-}
-.product-detail-description-section rich-text {
+
+/* 商品详情图文 */
+.product-description-card .description-content {
   font-size: 28rpx;
-  line-height: 1.6;
+  line-height: 1.7;
   color: #333;
+  padding-top: 10rpx; /* 与标题的间距 */
+}
+.product-description-card .description-content image,
+.product-description-card .description-content img { /* 确保 rich-text 内图片正确显示 */
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin-top: 10rpx; /* 图片与上方文字间距 */
+  margin-bottom: 10rpx; /* 图片与下方文字间距 */
+  border-radius: 8rpx; /* 图片可以加点圆角 */
+}
+.no-description {
+  font-size: 26rpx;
+  color: #999;
+  text-align: center;
+  padding: 40rpx 0;
 }
 
-.bottom-placeholder {
-  height: 100rpx; /* 与底部操作栏高度一致 */
-  width: 100%;
+/* 底部安全区域占位，确保内容不被操作栏遮挡 */
+.safe-area-bottom {
+  height: constant(safe-area-inset-bottom);
+  height: env(safe-area-inset-bottom);
+  /* 此处padding-bottom已加到 .detail-page 上，这里主要用于精确控制 */
 }
 
-/* 底部操作栏 - 样式优化 */
-.bottom-actions-bar {
+/* 底部操作栏 (与之前样式保持一致或微调) */
+.bottom-action-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 100rpx;
-  background-color: #ffffff;
+  height: 100rpx; /* 操作栏高度 */
+  background-color: #fff;
   display: flex;
   align-items: center;
-  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-  z-index: 999;
-  padding: 0 10rpx; /* 整体左右内边距 */
-  box-sizing: border-box;
+  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 99;
 }
-
-.actions-left {
+.action-icon-group {
   display: flex;
-  align-items: center;
-  /* justify-content: space-around; */ /* 改为 space-between 或固定间距 */
+  flex: 1.2; /* 图标区域占比 */
+  justify-content: space-around;
+  align-items: stretch; /* 让子项撑满高度 */
   height: 100%;
-  /* flex-grow: 1; */ /* 左侧不再自动增长，固定宽度或让子项决定 */
-  flex-shrink: 0; /* 防止被压缩 */
-  margin-right: 10rpx; /* 与右侧按钮的间距 */
 }
-
-.action-item {
+.action-icon-item, .contact-button {
+  flex: 1; /* 图标均分空间 */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: 20rpx;
   color: #666;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: 1.2; /* 调整行高让文字和图标更紧凑 */
+  border: none;
   position: relative;
-  height: 100%;
-  padding: 0 15rpx; /* 图标项左右内边距，控制图标间距 */
-  /* flex: 1; */ /* 不再让每个图标项平均分配，宽度由内容和padding决定 */
-  text-align: center;
 }
-
-.action-icon {
+.contact-button::after{ /* 移除客服按钮默认边框 */
+  border: none;
+}
+.action-icon-item image {
   width: 44rpx;
   height: 44rpx;
   margin-bottom: 4rpx;
 }
-
-.action-text {
-  font-size: 20rpx;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
 .cart-badge {
   position: absolute;
-  top: 6rpx;
-  right: 5rpx; /* 调整角标位置 */
-  background-color: #ff4d4f;
+  top: 6rpx; /* 微调角标位置 */
+  right: 12rpx; /* 微调角标位置 */
+  background-color: #FF6F00;
   color: white;
-  font-size: 18rpx;
-  padding: 1rpx 8rpx;
+  font-size: 20rpx;
+  min-width: 30rpx;
+  height: 30rpx;
   border-radius: 15rpx;
-  min-width: 16rpx;
-  text-align: center;
-  line-height: normal;
-  border: 1rpx solid #fff;
-}
-
-/* 右侧按钮直接作为 .bottom-actions-bar 的子元素 */
-.action-button {
-  height: 72rpx;
-  line-height: 72rpx;
-  font-size: 26rpx;
-  border-radius: 36rpx;
-  color: #fff;
-  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  flex: 1; /* 让两个按钮平分剩余空间 */
-  /* flex-basis: 0; */ /* flex-grow 生效的前提，也可以不设置，让flex-grow主导 */
-  margin: 0 5rpx; /* 按钮之间的间距 */
+  padding: 0 8rpx;
+  box-sizing: border-box;
 }
-/* 第一个按钮（加入购物车）的左边距可以取消，因为它前面有 .actions-left */
+
+.action-button-group {
+  display: flex;
+  flex: 2; /* 按钮区域占比 */
+  height: 100%; /* 按钮组撑满操作栏高度 */
+}
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: white;
+  border-radius: 0; 
+  margin: 0;
+  height: 100%;
+  line-height: normal; /* 使用 flex 居中，不需要 line-height 等于 height */
+}
+.action-btn::after {
+  border: none;
+}
 .add-to-cart-btn {
-  background-image: linear-gradient(to right, #ffc800, #ffa500);
-  margin-left: 0; /* 第一个按钮左边距为0 */
+  background-color: #FFA726; /* 橙黄色 */
 }
-
 .buy-now-btn {
-  background-image: linear-gradient(to right, #ff6a6a, #ff4d4f);
+  background-color: #FF6F00; /* 主题强调色 */
 }
 
-
-/* 规格选择弹窗样式 (保持不变) */
+/* 规格选择弹窗 (与之前样式保持一致或微调) */
 .specs-popup-mask {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  background-color: rgba(0,0,0,0.5);
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 1000;
 }
-
+.specs-popup-mask.show {
+  opacity: 1;
+  visibility: visible;
+}
 .specs-popup-content {
   background-color: #fff;
   width: 100%;
-  border-top-left-radius: 20rpx;
-  border-top-right-radius: 20rpx;
+  max-height: 75vh;
+  border-radius: 20rpx 20rpx 0 0;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s ease-out;
-  max-height: 85vh;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
 }
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+.specs-popup-mask.show .specs-popup-content {
+  transform: translateY(0);
 }
 
 .popup-header {
   display: flex;
-  padding: 30rpx;
+  padding: 30rpx 24rpx; /* 增加头部内边距 */
   border-bottom: 1rpx solid #f0f0f0;
   position: relative;
-  flex-shrink: 0;
 }
-
 .popup-product-image {
-  width: 160rpx;
-  height: 160rpx;
+  width: 180rpx; /* 弹窗内商品图稍大 */
+  height: 180rpx;
   border-radius: 8rpx;
   margin-right: 20rpx;
-  background-color: #eee;
-  flex-shrink: 0;
+  background-color: #f0f0f0;
 }
-
 .popup-product-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  min-width: 0;
+  justify-content: flex-end; /* 调整对齐方式 */
+  padding-bottom: 10rpx; /* 给底部留点空间 */
 }
-
 .popup-price {
-  font-size: 36rpx;
-  color: #ff4d4f;
+  font-size: 38rpx; /* 弹窗价格更突出 */
+  color: #FF6F00;
   font-weight: bold;
   margin-bottom: 8rpx;
+  line-height: 1;
+}
+.popup-stock, .popup-selected-spec {
+  font-size: 26rpx; /* 弹窗内文字稍大 */
+  color: #999;
+  line-height: 1.4;
+  margin-top: 4rpx;
+}
+.popup-selected-spec {
+    color: #333; /* 已选规格颜色加深 */
+    font-weight: 500;
+}
+.close-popup-btn {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  width: 40rpx; /* 关闭按钮稍大 */
+  height: 40rpx;
+  padding: 10rpx; /* 增加点击区域 */
 }
 
-.popup-stock,
-.popup-selected-spec {
-  font-size: 24rpx;
-  color: #999;
-  margin-bottom: 4rpx;
+.popup-body {
+  padding: 24rpx;
+  flex: 1;
+  overflow-y: auto; /* 内容超出时可滚动 */
+}
+.spec-group-item {
+  margin-bottom: 30rpx;
+}
+.spec-group-name {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+  display: block;
+}
+.spec-options {
+  display: flex;
+  flex-wrap: wrap;
+}
+.spec-option {
+  background-color: #f5f5f5;
+  color: #555;
+  font-size: 26rpx;
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  margin-right: 20rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #f5f5f5;
+  transition: all 0.2s ease;
+}
+.spec-option.active {
+  background-color: #FFF3E0;
+  color: #FF6F00;
+  border-color: #FF6F00;
+  font-weight: 500;
+}
+.spec-option.disabled {
+  background-color: #f0f0f0;
+  color: #bbb;
+  border-color: #f0f0f0;
+  text-decoration: line-through;
+}
+
+.quantity-control-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 0 10rpx; /* 调整上下边距 */
+  /* border-top: 1rpx solid #f0f0f0; */ /* 移到组间距控制 */
+  /* margin-top: 10rpx; */
+}
+.quantity-label {
+  font-size: 28rpx;
+  color: #333;
+}
+.quantity-stepper {
+  display: flex;
+  align-items: center;
+}
+.stepper-btn {
+  width: 60rpx; /* 增大按钮 */
+  height: 60rpx;
+  background-color: #f5f5f5;
+  color: #555;
+  font-size: 40rpx; /* 增大符号 */
+  line-height: 60rpx;
+  text-align: center;
+  border-radius: 8rpx; /* 圆角可调整为50%变圆形 */
+  padding: 0;
+}
+.stepper-btn.disabled {
+  color: #ccc;
+  background-color: #f9f9f9;
+}
+.quantity-input {
+  width: 88rpx; /* 调整宽度 */
+  height: 60rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #333;
+  margin: 0 8rpx; /* 减小与按钮的间距 */
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
+  min-height: 60rpx;
+}
+
+.popup-footer {
+  padding: 16rpx 24rpx;
+  padding-bottom: calc(16rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #f0f0f0;
+  background-color: #fff; /* 确保有背景色 */
+}
+.confirm-action-btn {
+  background-image: linear-gradient(to right, #FFAC73, #FF6F00); /* 渐变背景 */
+  color: white;
+  font-size: 30rpx;
+  font-weight: 500;
+  height: 88rpx; /* 按钮高度 */
+  line-height: 88rpx;
+  border-radius: 44rpx; /* 全圆角 */
+  text-align: center;
+  border: none;
+}
+.confirm-action-btn.disabled {
+  background-image: none; /* 禁用时移除渐变 */
+  background-color: #FFCCBC;
+  color: #fff;
+  opacity: 0.7; /* 透明度降低 */
+}
+
+/* 工具类 */
+.ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.popup-close-btn {
-  position: absolute;
-  top: 20rpx;
-  right: 20rpx;
-  width: 32rpx;
-  height: 32rpx;
-  padding: 10rpx;
-}
-
-.popup-body {
-  padding: 0 30rpx;
-  box-sizing: border-box;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.specs-section,
-.quantity-section {
-  padding: 30rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-.specs-section:last-child,
-.quantity-section:last-of-type {
-  border-bottom: none;
-}
-
-
-.specs-title,
-.quantity-title {
-  font-size: 28rpx;
-  color: #333;
-  margin-bottom: 20rpx;
-}
-
-.specs-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-}
-
-.spec-item {
-  padding: 12rpx 24rpx;
-  border: 1rpx solid #ddd;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  color: #333;
-  background-color: #f7f7f7;
-  transition: all 0.2s ease;
-}
-
-.spec-item.active {
-  border-color: #ff4d4f;
-  background-color: #fff2f2;
-  color: #ff4d4f;
-}
-
-.spec-item.disabled {
-  color: #ccc;
-  background-color: #f9f9f9;
-  border-color: #eee;
-  pointer-events: none;
-  position: relative;
-}
-.spec-item.disabled::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  border-top: 1rpx solid #ddd;
-  transform: translateY(-50%);
-  opacity: 0.7;
-}
-
-
-.quantity-control {
-  display: flex;
-  align-items: center;
-}
-
-.quantity-btn {
-  width: 60rpx;
-  height: 60rpx;
-  line-height: 58rpx;
-  text-align: center;
-  border: 1rpx solid #ddd;
-  background-color: #f7f7f7;
-  font-size: 36rpx;
-  color: #333;
-  box-sizing: border-box;
-}
-.quantity-btn.minus {
-  border-top-left-radius: 8rpx;
-  border-bottom-left-radius: 8rpx;
-}
-.quantity-btn.plus {
-  border-top-right-radius: 8rpx;
-  border-bottom-right-radius: 8rpx;
-}
-.quantity-btn.disabled {
-  color: #ccc;
-  background-color: #f9f9f9;
-  pointer-events: none;
-}
-
-.quantity-input {
-  width: 80rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  text-align: center;
-  border-top: 1rpx solid #ddd;
-  border-bottom: 1rpx solid #ddd;
-  font-size: 28rpx;
-  color: #333;
-  min-height: 60rpx;
-  box-sizing: border-box;
-  background-color: #fff;
-}
-
-.popup-confirm-btn-container {
-  padding: 20rpx 30rpx;
-  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.popup-confirm-btn {
-  width: 100%;
-  height: 80rpx;
-  line-height: 80rpx;
-  background-image: linear-gradient(to right, #ff6a6a, #ff4d4f);
-  color: #fff;
-  font-size: 30rpx;
-  border-radius: 40rpx;
-  text-align: center;
-  border: none;
-}
-.popup-confirm-btn[disabled] {
-  background-image: none;
-  background-color: #fcc;
-  color: #fff;
-  opacity: 0.7;
+.ellipsis-2line {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
