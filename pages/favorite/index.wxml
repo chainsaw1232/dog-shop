@@ -13,6 +13,25 @@
         showButton="{{true}}"
         bind:buttonclick="navigateToShop">
       </empty-state>
+
+      <view class="recommend-section-favorite" wx:if="{{recommendProducts.length > 0}}">
+        <view class="section-header-favorite">
+          <text class="section-title-favorite">为您精选</text>
+        </view>
+        <view class="product-grid-favorite">
+          <view class="product-item-simple-favorite" 
+                wx:for="{{recommendProducts}}" 
+                wx:key="_id" 
+                bindtap="navigateToDetail" 
+                data-id="{{item._id}}"> <image class="product-image-simple-favorite" 
+                   src="{{item.mainImage || '/static/images/products/default_product.png'}}" 
+                   mode="aspectFill">
+            </image>
+            <view class="product-name-simple-favorite">{{item.name}}</view>
+            <view class="product-price-simple-favorite">¥{{item.price}}</view>
+          </view>
+        </view>
+      </view>
     </view>
   </block>
 
@@ -36,7 +55,7 @@
             <button 
               class="action-btn remove-btn" 
               size="mini" 
-              bindtap="removeFavorite" 
+              catchtap="removeFavorite" 
               data-favoriteid="{{item._id}}" 
               data-productid="{{item.productId}}"
               hover-class="button-hover-light"
@@ -46,7 +65,7 @@
             <button 
               class="action-btn add-cart-btn" 
               size="mini" 
-              bindtap="addToCart" 
+              catchtap="addToCart" 
               data-id="{{item.productId}}"
               hover-class="button-hover"
               disabled="{{isProcessingAction || item.status !== 'active'}}">
@@ -58,11 +77,11 @@
     </view>
 
     <view class="list-bottom-indicator">
-      <view wx:if="{{isLoading && favorites.length > 0}}" class="load-more">
+      <view wx:if="{{isLoadingMore && favorites.length > 0}}" class="load-more">
         <image class="loading-image-small" src="/static/images/loading/loading.png" mode="aspectFit"></image>
         <text>正在加载更多...</text>
       </view>
-      <view wx:if="{{!hasMore && favorites.length > 0 && !isLoading}}" class="no-more">
+      <view wx:if="{{!hasMore && favorites.length > 0 && !isLoadingMore}}" class="no-more">
         <text>— 已经到底啦 —</text>
       </view>
     </view>

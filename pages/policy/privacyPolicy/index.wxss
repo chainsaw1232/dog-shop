@@ -1,0 +1,4 @@
+/* pages/policy/privacyPolicy/index.wxss */
+@import "../common-policy.wxss"; /* 引入通用样式 */
+
+/* 如果有特定于隐私政策的样式，可以在这里添加 */

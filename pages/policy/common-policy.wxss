@@ -1,0 +1,115 @@
+/* /pages/policy/common-policy.wxss */
+/* 或 /styles/common-policy.wxss */
+
+.policy-page-container {
+  background-color: #FFFFFF;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 0 32rpx 60rpx; /* 底部留足空间 */
+}
+
+.policy-header {
+  padding: 48rpx 0 32rpx;
+  text-align: center;
+  border-bottom: 1rpx solid #f0f0f0;
+  margin-bottom: 40rpx;
+}
+
+.policy-main-title {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #1d2129; /* 深灰色，更柔和 */
+  margin-bottom: 16rpx;
+  line-height: 1.3;
+}
+
+.policy-meta-info {
+  font-size: 24rpx;
+  color: #86909c; /* 次要信息颜色 */
+  line-height: 1.5;
+}
+.policy-meta-info text {
+  display: block;
+  margin-top: 4rpx;
+}
+
+.policy-body-content {
+  /* 可以留空，具体内容由 section 控制 */
+}
+
+.policy-section {
+  margin-bottom: 48rpx; /* 加大段落组间距 */
+}
+.policy-section:last-child {
+  margin-bottom: 0;
+}
+
+.policy-section-title {
+  font-size: 32rpx;
+  font-weight: 500; /* 中等粗细 */
+  color: #1d2129;
+  margin-bottom: 24rpx;
+  padding-bottom: 12rpx;
+  /* border-bottom: 1rpx solid #e5e6eb; */ /* 可选的标题下划线 */
+}
+
+.policy-paragraph {
+  display: block; /* 使 text 标签表现为段落 */
+  font-size: 28rpx;
+  line-height: 1.75; /* 提升阅读舒适度 */
+  color: #4e5969; /* 正文颜色 */
+  margin-bottom: 20rpx;
+  text-align: justify; /* 两端对齐，更正式 */
+  letter-spacing: 0.5rpx; /* 轻微增加字间距 */
+}
+.policy-paragraph.bold {
+  font-weight: 500;
+  color: #1d2129;
+}
+.policy-paragraph.indent {
+  text-indent: 2em; /* 子条款段首缩进 */
+}
+.policy-paragraph.center-text {
+  text-align: center;
+}
+
+
+/* 用于强调重要提示的样式 */
+.policy-emphasis-box {
+  background-color: #f7f8fa;
+  padding: 24rpx;
+  border-radius: 8rpx;
+  margin: 20rpx 0;
+  border-left: 6rpx solid #FF8C69; /* 主题色强调线 */
+}
+.policy-emphasis-box .policy-paragraph {
+  color: #4e5969;
+  margin-bottom: 0; /* 盒子内的段落通常不需要额外下边距 */
+}
+
+/* 用于“最终解释权”等特别声明的样式 */
+.policy-critical-note {
+  background-color: #fff7e6;
+  border: 1rpx solid #ffe58f;
+  padding: 24rpx;
+  border-radius: 8rpx;
+  margin-top: 30rpx;
+}
+.policy-critical-note .policy-paragraph {
+  font-size: 26rpx;
+  color: #d46b08;
+  line-height: 1.6;
+  margin-bottom: 10rpx;
+}
+.policy-critical-note .legal-disclaimer-text {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #8c8c8c;
+  line-height: 1.5;
+}
+
+/* 联系我们部分的样式 */
+.contact-info-section .policy-paragraph {
+  margin-bottom: 8rpx; /* 联系方式行间距小一些 */
+}

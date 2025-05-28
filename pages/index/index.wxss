@@ -110,7 +110,7 @@ page {
   display: flex;         /* 使用 flex 布局使其垂直居中 */
   align-items: center;   /* 垂直居中 */
   justify-content: center; /* 水平居中 (如果图标本身不占满wrapper) */
-  padding: 0 10rpx;     /* 为图标提供一些可点击的内边距 */
+  padding: 0 10rpx;      /* 为图标提供一些可点击的内边距 */
   margin-left: 10rpx;    /* 与输入框的间距 */
   height: 100%;          /* 高度与输入框包装器一致 */
   flex-shrink: 0;        /* 防止被压缩 */
@@ -189,15 +189,18 @@ page {
 .coupon-section {
   background-color: #fff;
   margin: 20rpx 0;
-  padding: 25rpx 0 30rpx 30rpx; /* 调整内边距，左边与标题对齐 */
+  /* 修改点：将原来的 padding: 25rpx 0 30rpx 30rpx; 修改为下面这行 */
+  padding: 25rpx 30rpx 30rpx 30rpx; /* 使右内边距也为 30rpx */
 }
+
 .section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-right: 30rpx; /* 右边距 */
-  margin-bottom: 25rpx; /* 标题与内容的间距 */
+  align-items: baseline; 
+  padding-right: 0rpx; 
+  margin-bottom: 25rpx; 
 }
+
 .section-title {
   font-size: 32rpx;
   font-weight: bold;
@@ -205,7 +208,7 @@ page {
 }
 .section-more {
   display: flex;
-  align-items: center;
+  align-items: center; 
   font-size: 24rpx;
   color: #999;
 }
@@ -219,12 +222,11 @@ page {
 }
 .coupon-item-wrapper {
   display: inline-block; /* 横向排列 */
-  margin-right: 20rpx; /* 优惠券之间的间距 */
+  margin-right: 30rpx; /* 优惠券之间的间距 */
 }
 .coupon-item {
   width: 280rpx; /* 优惠券宽度 */
   height: 150rpx; /* 优惠券高度 */
-  /* 确保这个云路径是您实际有效的优惠券背景图 */
   background-image: url('cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/coupon/coupon_bg_example.png'); 
   background-size: cover;
   background-repeat: no-repeat;
@@ -233,14 +235,14 @@ page {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #fff; /* 通常优惠券文字是白色，背景深色 */
+  color: #fff; 
   position: relative;
   padding: 10rpx;
   box-sizing: border-box;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.2); /* 文字轻微阴影，增强可读性 */
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2); 
 }
 .coupon-item.received {
-  opacity: 0.7; /* 已领取优惠券变淡 */
+  opacity: 0.7; 
 }
 .coupon-value {
   font-size: 24rpx;
@@ -268,7 +270,7 @@ page {
   bottom: 10rpx;
   right: 10rpx;
   background-color: #fff;
-  color: #FF8C69; /* 与主题色呼应 */
+  color: #FF8C69; 
   font-size: 20rpx;
   padding: 5rpx 10rpx;
   border-radius: 20rpx;
@@ -300,10 +302,10 @@ page {
 .product-grid {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between; /* 两端对齐，中间留空隙 */
+  justify-content: space-between; 
 }
-.product-card-wrapper { /* 用于控制每个卡片的宽度和间距 */
-  width: calc(50% - 10rpx); /* 减去gap的一半，gap通过justify-content实现 */
+.product-card-wrapper { 
+  width: calc(50% - 10rpx); 
   margin-bottom: 20rpx;
 }
 .product-card {
@@ -316,15 +318,15 @@ page {
 }
 .product-image {
   width: 100%;
-  height: 320rpx; /* 根据您的商品图片比例调整 */
-  background-color: #f0f0f0; /* 图片未加载时的占位背景 */
+  height: 320rpx; 
+  background-color: #f0f0f0; 
 }
 .product-name {
   font-size: 26rpx;
   color: #333;
   padding: 10rpx 15rpx 5rpx;
   line-height: 1.4;
-  height: calc(26rpx * 1.4 * 2); /* 限制两行高度 */
+  height: calc(26rpx * 1.4 * 2); 
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -334,11 +336,11 @@ page {
 .product-price {
   padding: 5rpx 15rpx 15rpx;
   display: flex;
-  align-items: baseline; /* 基线对齐 */
+  align-items: baseline; 
 }
 .current-price {
   font-size: 30rpx;
-  color: #FF5000; /* 价格颜色 */
+  color: #FF5000; 
   font-weight: bold;
   margin-right: 10rpx;
 }
@@ -348,14 +350,14 @@ page {
   text-decoration: line-through;
 }
 .sales-tag {
-  position: absolute; /* 相对于.product-card定位，如果.product-card是relative */
+  position: absolute; 
   top: 20rpx;
-  left: 0; /* 或者调整 left/right */
-  background-color: rgba(255, 100, 0, 0.8); /* 半透明橙色 */
+  left: 0; 
+  background-color: rgba(255, 100, 0, 0.8); 
   color: white;
   font-size: 20rpx;
   padding: 4rpx 10rpx;
-  border-radius: 0 15rpx 15rpx 0; /* 右侧圆角 */
+  border-radius: 0 15rpx 15rpx 0; 
 }
 
 /* Brand Section */
@@ -371,11 +373,11 @@ page {
   height: 100rpx;
   border-radius: 8rpx;
   margin-right: 20rpx;
-  background-color: #f0f0f0; /* logo未加载时的背景 */
+  background-color: #f0f0f0; 
 }
 .brand-text {
   flex: 1;
-  min-width: 0; /* 防止文字过长导致布局问题 */
+  min-width: 0; 
 }
 .brand-title {
   font-size: 30rpx;
@@ -389,14 +391,14 @@ page {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 1; /* 限制一行显示 */
+  -webkit-line-clamp: 1; 
   -webkit-box-orient: vertical;
 }
 .arrow-icon-brand {
   width: 24rpx;
   height: 24rpx;
   opacity: 0.5;
-  flex-shrink: 0; /* 防止被压缩 */
+  flex-shrink: 0; 
 }
 
 /* Load More for Hot Products */
@@ -415,5 +417,5 @@ page {
 /* Safe Area Bottom Placeholder */
 .safe-area-bottom {
   height: env(safe-area-inset-bottom);
-  padding-bottom: 20rpx; /* 额外一些间距，确保内容不被遮挡 */
+  padding-bottom: 20rpx; 
 }

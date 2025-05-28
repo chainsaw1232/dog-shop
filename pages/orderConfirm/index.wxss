@@ -1,20 +1,29 @@
 /* pages/orderConfirm/index.wxss */
 .page {
-  background-color: #f4f4f4;
+  background-color: #f4f4f8; /* 页面背景色，保持浅灰色调 */
   min-height: 100vh;
-  padding-bottom: 120rpx; /* 为底部提交栏留出空间 */
+  padding-bottom: 140rpx; /* 稍微增加底部提交栏的预留空间，确保内容不重叠 */
+  box-sizing: border-box;
+}
+
+/* 通用卡片样式 */
+.section-card {
+  background-color: #fff;
+  margin-bottom: 20rpx;
+  border-radius: 16rpx; /* 轻微增加圆角 */
+  overflow: hidden; /* 配合圆角 */
 }
 
 /* 地址区域 */
 .address-section {
-  background-color: #fff;
+  /* background-color: #fff; */ /* 移至 .section-card */
   padding: 30rpx 24rpx;
-  margin-bottom: 20rpx;
+  /* margin-bottom: 20rpx; */ /* 移至 .section-card */
   display: flex;
   align-items: center;
   position: relative; /* 用于背景条纹 */
 }
-.address-section::before { /* 添加条纹背景 */
+.address-section::before { /* 地址区域底部的装饰条纹 */
   content: '';
   position: absolute;
   left: 0;
@@ -25,23 +34,28 @@
     -45deg,
     #FFCDD2, /* 浅红色 */
     #FFCDD2 10rpx,
-    #FFEBEE 10rpx, /* 更浅的红色或白色 */
-    #FFEBEE 20rpx
+    #FFF3E0 10rpx, /* 更换为浅橙色，与主题色系更搭 */
+    #FFF3E0 20rpx
   );
+  z-index: 1; /* 确保在内容之下，如果需要 */
 }
 .address-icon { /* 地址图标 (可选) */
-  width: 40rpx;
-  height: 40rpx;
+  width: 36rpx; /* 调整图标大小 */
+  height: 36rpx;
   margin-right: 20rpx;
+  flex-shrink: 0; /* 防止图标被压缩 */
 }
 .address-details {
   flex: 1;
+  min-width: 0; /* 防止内容溢出时flex布局问题 */
 }
 .address-user-info {
   font-size: 30rpx;
   color: #333;
   font-weight: bold;
   margin-bottom: 8rpx;
+  display: flex; /* 使姓名和电话在同一行 */
+  align-items: center;
 }
 .address-user-info text:first-child {
   margin-right: 20rpx;
@@ -61,25 +75,27 @@
   color: #FF6F00; /* 提醒用户选择或添加地址 */
   flex: 1;
   text-align: left;
+  padding: 20rpx 0; /* 增加一些垂直内边距使文字更居中 */
 }
-.arrow-right {
-  width: 24rpx;
-  height: 24rpx;
-  opacity: 0.6;
+.arrow-right { /* 通用右箭头图标 */
+  width: 28rpx; /* 稍微增大箭头 */
+  height: 28rpx;
+  opacity: 0.5; /* 调整透明度 */
   margin-left: 20rpx;
+  flex-shrink: 0;
 }
 
 /* 商品信息 */
 .order-items-section {
-  background-color: #fff;
-  margin-bottom: 20rpx;
+  /* background-color: #fff; */ /* 移至 .section-card */
+  /* margin-bottom: 20rpx; */ /* 移至 .section-card */
   padding: 0 24rpx;
 }
 .section-title-bar { /* 商品信息标题栏 */
   font-size: 30rpx;
   color: #333;
   font-weight: 500;
-  padding: 20rpx 0;
+  padding: 25rpx 0; /* 调整内边距 */
   border-bottom: 1rpx solid #f0f0f0;
 }
 .order-item {
@@ -95,13 +111,15 @@
   height: 160rpx;
   border-radius: 8rpx;
   margin-right: 20rpx;
-  background-color: #f0f0f0; /* 占位背景 */
+  background-color: #f5f5f5; /* 更浅的占位背景 */
+  flex-shrink: 0;
 }
 .product-details {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between; /* 让价格和数量部分在底部 */
+  min-width: 0; /* 防止内容溢出 */
 }
 .product-name {
   font-size: 28rpx;
@@ -118,11 +136,15 @@
   font-size: 24rpx;
   color: #999;
   margin-bottom: 8rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .product-price-quantity {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: auto; /* 将价格和数量推到底部 */
 }
 .product-price {
   font-size: 28rpx;
@@ -133,32 +155,44 @@
   font-size: 26rpx;
   color: #999;
 }
+.no-items-placeholder { /* 新增：用于订单中没有商品时的占位提示 */
+  text-align: center;
+  color: #999;
+  font-size: 28rpx;
+  padding: 40rpx 0;
+}
 
 /* 配送方式、优惠券、备注 */
 .order-options-section {
-  background-color: #fff;
-  margin-bottom: 20rpx;
+  /* background-color: #fff; */ /* 移至 .section-card */
+  /* margin-bottom: 20rpx; */ /* 移至 .section-card */
 }
 .option-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 28rpx 24rpx;
+  padding: 30rpx 24rpx; /* 统一内边距 */
   font-size: 28rpx;
   color: #333;
   border-bottom: 1rpx solid #f0f0f0;
+  min-height: 40rpx; /* 确保行有最小高度 */
 }
 .option-item:last-child {
   border-bottom: none;
 }
 .option-label {
   font-weight: 500;
+  flex-shrink: 0; /* 防止标签被压缩 */
+  margin-right: 20rpx; /* 标签和内容间距 */
 }
 .option-value, .coupon-display {
   color: #666;
   display: flex;
   align-items: center;
-  max-width: 70%; /* 防止优惠券名称过长导致箭头换行 */
+  flex-grow: 1; /* 占据剩余空间 */
+  justify-content: flex-end; /* 内容靠右 */
+  text-align: right; /* 文本也靠右 */
+  /* max-width: 70%; */ /* 移除固定百分比，用flex实现 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -167,23 +201,31 @@
   color: #FF6F00; 
   font-weight: 500;
 }
-.option-value image, .coupon-display image.arrow-right-icon { /* 右箭头特定类名 */
+/* .option-value image, .coupon-display image.arrow-right-icon */
+.arrow-right-icon { /* 用于选项右侧的箭头 */
   width: 24rpx;
   height: 24rpx;
   margin-left: 10rpx;
   opacity: 0.6;
-  flex-shrink: 0; /* 防止箭头被压缩 */
+  flex-shrink: 0;
 }
 .remark-input {
-  width: 100%;
+  flex-grow: 1; /* 确保输入框能填满 */
   text-align: right;
   font-size: 28rpx;
   color: #666;
+  min-height: 30rpx; /* input最小高度 */
 }
+.remark-input .wx-input-placeholder, /* 原生placeholder */
+.remark-input .remark-placeholder /* 自定义placeholder类 (WXML中是placeholder-class) */ {
+  color: #bbb; /* 统一placeholder颜色 */
+  font-size: 28rpx;
+}
+
 
 /* 金额明细 */
 .amount-summary-section {
-  background-color: #fff;
+  /* background-color: #fff; */ /* 移至 .section-card */
   padding: 20rpx 24rpx;
 }
 .amount-item {
@@ -192,14 +234,16 @@
   align-items: center;
   font-size: 28rpx;
   color: #333;
-  padding: 12rpx 0;
+  padding: 14rpx 0; /* 调整金额项的上下内边距 */
 }
 .amount-label {}
 .amount-value {}
-.amount-item .amount-value.highlight { 
+.amount-item .amount-value.highlight, /* WXSS 中已有 */
+.amount-item .amount-value.highlight-red /* 兼容我WXML中可能用的类名 */ { 
   color: #e64340;
   font-weight: bold;
 }
+
 
 /* 底部提交栏 */
 .submission-bar {
@@ -208,9 +252,9 @@
   left: 0;
   right: 0;
   background-color: #fff;
-  padding: 16rpx 24rpx;
-  padding-bottom: calc(16rpx + constant(safe-area-inset-bottom));
-  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  padding: 20rpx 24rpx; /* 调整内边距 */
+  padding-bottom: calc(20rpx + constant(safe-area-inset-bottom)); /* 适配iPhone X等设备 */
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -218,11 +262,13 @@
   z-index: 99;
 }
 .total-payable {
-  font-size: 26rpx;
+  font-size: 28rpx; /* 调整字体大小 */
   color: #333;
+  display: flex; /* 让合计和金额在同一行对齐 */
+  align-items: baseline; /* 基线对齐 */
 }
 .total-amount-value {
-  font-size: 36rpx;
+  font-size: 38rpx; /* 调整字体大小 */
   color: #e64340;
   font-weight: bold;
   margin-left: 8rpx;
@@ -231,20 +277,24 @@
   background-color: #FF6F00; 
   color: white;
   font-size: 30rpx;
-  padding: 0 60rpx; 
-  height: 80rpx;
-  line-height: 80rpx;
-  border-radius: 40rpx;
+  font-weight: 500; /* 加粗 */
+  padding: 0 70rpx; /* 调整内边距 */
+  height: 88rpx; /* 调整高度 */
+  line-height: 88rpx;
+  border-radius: 44rpx; /* 匹配高度的一半，形成全圆角 */
   border: none;
 }
+.submit-order-btn::after { /* 移除button默认边框 */
+    border: none;
+}
 .submit-order-btn.disabled {
-  background-color: #FFCCBC; 
+  background-color: #FFD1B8; /* 更柔和的禁用颜色 */
   color: #fff;
-  opacity: 0.7;
+  opacity: 1; /* 移除opacity，直接用背景色表示禁用 */
 }
 
 
-/* --- 优惠券弹窗样式 --- */
+/* --- 优惠券弹窗样式 (与您提供的一致，稍作整理) --- */
 .popup-mask {
   position: fixed;
   top: 0;
@@ -368,13 +418,13 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0; /* 防止文本溢出影响布局 */
 }
 .coupon-name {
   font-size: 28rpx;
   color: #333;
   font-weight: 500;
   margin-bottom: 6rpx;
-  /* 单行省略 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -404,6 +454,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0; /* 防止被压缩 */
 }
 .select-icon {
   width: 40rpx;
@@ -444,6 +495,9 @@
   border-radius: 44rpx;
   text-align: center;
   border: none;
+}
+.confirm-coupon-btn::after { /* 移除button默认边框 */
+    border: none;
 }
 .confirm-coupon-btn:active {
   background-color: #e65c00; /* 点击效果 */

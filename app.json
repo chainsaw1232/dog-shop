@@ -13,7 +13,9 @@
     "pages/review/index",
     "pages/about/index",
     "pages/orderDetail/index",
-    "pages/payResult/index"
+    "pages/payResult/index",
+    "pages/policy/userAgreement/index",  
+    "pages/policy/privacyPolicy/index"    
   ],
   "window": {
     "backgroundTextStyle": "light",

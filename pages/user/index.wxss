@@ -1,53 +1,137 @@
 /* pages/user/index.wxss */
 .user-page {
-  background-color: #f4f4f4; /* 页面背景色 */
+  background-color: #f4f4f4;
   min-height: 100vh;
-  padding-bottom: 20rpx; /* 给底部留出一些空间 */
+  padding-bottom: 20rpx;
   box-sizing: border-box;
 }
 
 .user-info-card {
-  background-color: #FF8C69; /* 顶部用户信息区域背景色，与截图类似 */
+  background-color: #FF8C69;
   padding: 40rpx 30rpx;
   display: flex;
   align-items: center;
-  margin-bottom: 20rpx; /* 与下方卡片间距 */
+  margin-bottom: 20rpx;
+  position: relative; 
 }
 
 .avatar {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  border: 4rpx solid #fff; /* 头像白色边框 */
-  margin-right: 30rpx;
+  border: 4rpx solid #fff;
+  margin-right: 25rpx; 
+  flex-shrink: 0; 
 }
 
 .nickname {
   font-size: 36rpx;
-  color: #fff; /* 昵称白色 */
+  color: #fff;
   font-weight: bold;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.login-button {
-  background-color: transparent;
-  color: #fff;
-  font-size: 32rpx;
-  padding: 10rpx 30rpx;
-  border: 1px solid #fff; /* 登录按钮白色边框 */
-  border-radius: 30rpx;
-  line-height: 1.5;
-  margin: 0; /* 清除默认的button外边距 */
+/* --- 登录区域和政策同意的样式 --- */
+.login-area {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; 
+  justify-content: center; 
+  min-height: 120rpx; 
 }
-.login-button::after { /* 清除button的默认边框 */
+
+.auth-login-button {
+  background-color: #fff; 
+  color: #FF8C69; 
+  font-size: 28rpx; 
+  font-weight: 500;
+  padding: 12rpx 30rpx; 
+  border-radius: 30rpx; 
+  margin-bottom: 15rpx; 
+  text-align: center;
+  border: none;
+  line-height: 1.4; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.auth-login-button::after {
   border: none;
 }
 
+.auth-login-button[disabled] {
+  background-color: rgba(255, 255, 255, 0.6); 
+  color: #FFB59E; 
+  opacity: 0.8;
+  box-shadow: none;
+}
+
+.policy-line {
+  display: flex;
+  align-items: center; 
+  width: 100%; 
+}
+
+.policy-checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-right: 8rpx; 
+}
+
+.policy-checkbox-label {
+  display: flex; 
+  align-items: center;
+}
+
+.custom-policy-checkbox .wx-checkbox-input {
+  width: 26rpx !important; 
+  height: 26rpx !important;
+  border-radius: 4rpx !important;
+  border: 1px solid #fff !important; 
+  background-color: transparent !important;
+  margin-top: -2rpx; /* 微调垂直对齐 */
+}
+.custom-policy-checkbox .wx-checkbox-input.wx-checkbox-input-checked {
+  background-color: #fff !important;
+  border-color: #fff !important;
+}
+.custom-policy-checkbox .wx-checkbox-input.wx-checkbox-input-checked::before {
+  font-size: 22rpx !important; 
+  color: #FF8C69 !important; 
+}
+
+.policy-text-wrapper {
+  display: flex; 
+  flex-wrap: wrap; 
+  align-items: center; 
+  font-size: 20rpx; 
+  color: #fff;
+  line-height: 1.5; 
+}
+
+.static-policy-text {
+  margin-right: 6rpx;
+}
+
+.dynamic-policy-link {
+  color: #fff; 
+  text-decoration: underline;
+  margin-right: 6rpx;
+}
+.dynamic-policy-link:last-child {
+  margin-right: 0;
+}
+/* --- 登录区域和政策同意样式结束 --- */
+
 
 .section-card {
-  background-color: #fff; /* 卡片背景白色 */
-  border-radius: 16rpx; /* 卡片圆角 */
-  margin: 0 20rpx 20rpx; /* 卡片外边距 */
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05); /* 卡片轻微阴影 */
+  background-color: #fff;
+  border-radius: 16rpx;
+  margin: 0 20rpx 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 
 .section-header {
@@ -60,7 +144,6 @@
 .section-header:last-child { 
   border-bottom: none;
 }
-
 
 .section-title {
   font-size: 32rpx;
@@ -119,15 +202,13 @@
 }
 
 .menu-section {
-  padding: 10rpx 0 10rpx 40rpx; /* 重点修改这里：增加了左内边距 40rpx */
-                                /* 上下各10rpx的内边距，右边距为0，因为menu-item自己有右边距 */
+  padding: 10rpx 0 10rpx 40rpx;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 30rpx 30rpx 30rpx 0; /* 修改这里：左内边距设为0，因为父级 menu-section 已经有了 */
-                                /* 上下内边距30rpx，右内边距30rpx */
+  padding: 30rpx 30rpx 30rpx 0;
   border-bottom: 1rpx solid #f5f5f5; 
 }
 
@@ -178,7 +259,6 @@
 }
 .product-item:nth-child(odd){
 }
-
 
 .product-image {
   width: 100%;

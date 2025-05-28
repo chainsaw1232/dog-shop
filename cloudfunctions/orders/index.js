@@ -1,4 +1,4 @@
-// 云函数入口文件 for orders
+// cloudfunctions/orders/index.js
 const cloud = require('wx-server-sdk');
 
 cloud.init({
@@ -26,7 +26,7 @@ function generateOrderNumber() {
  * 创建新订单
  * @param {object} event - 包含订单信息和用户openid
  * @param {string} event.addressId - 收货地址ID
- * @param {Array} event.orderItems - 订单商品列表 (注意：前端传递的应该是 orderItems，不是 items)
+ * @param {Array} event.orderItems - 订单商品列表
  * @param {string} [event.couponId] - 优惠券ID
  * @param {string} [event.remark] - 订单备注
  * @param {number} event.totalAmount - 订单总金额 (前端计算的总金额，后端会再校验)
@@ -37,14 +37,12 @@ function generateOrderNumber() {
 async function internalCreateOrder(event, openid) {
   const { addressId, orderItems, couponId, remark, totalAmount, productAmount, shippingFee = 0 } = event;
   
-  // 1. 参数校验
   if (!openid || !addressId || !orderItems || orderItems.length === 0 || totalAmount === undefined || productAmount === undefined) {
     return { code: 400, message: '创建订单参数不完整或无效' };
   }
 
-  const transaction = await db.startTransaction(); // 开启事务
+  const transaction = await db.startTransaction();
   try {
-    // 2. 获取收货地址信息
     const addressRes = await transaction.collection('address').doc(addressId).get();
     if (!addressRes.data || addressRes.data._openid !== openid) {
       await transaction.rollback();
@@ -52,7 +50,6 @@ async function internalCreateOrder(event, openid) {
     }
     const shippingAddress = addressRes.data;
 
-    // 3. 校验商品库存、价格，并计算后端商品总额
     let calculatedServerProductAmount = 0;
     const productIds = orderItems.map(item => item.productId);
     const productsSnapshot = await transaction.collection('products').where({ _id: _.in(productIds) }).get();
@@ -61,40 +58,48 @@ async function internalCreateOrder(event, openid) {
 
     for (const item of orderItems) {
       const dbProduct = dbProducts.find(p => p._id === item.productId);
-      if (!dbProduct) {
+      if (!dbProduct || dbProduct.status !== 'active') { // 检查商品是否存在或上架
         await transaction.rollback();
         return { code: 404, message: `商品 ${item.productName || item.productId} 不存在或已下架` };
       }
-      // TODO: 如果有规格，还需要根据 specId 查找规格价格和库存
-      const currentPrice = dbProduct.price; // 假设直接用商品主价格
-      const currentStock = dbProduct.stock; // 假设直接用商品主库存
+      
+      let currentPrice = dbProduct.price;
+      let currentStock = dbProduct.stock;
+      let currentSpecName = item.specName || '';
+      let currentSpecId = item.specId || null;
+
+      if (item.specId && dbProduct.specs && dbProduct.specs.length > 0) {
+        const selectedSpec = dbProduct.specs.find(s => (s._id && s._id.toString() === item.specId) || (s.id && s.id.toString() === item.specId));
+        if (!selectedSpec) {
+          await transaction.rollback();
+          return { code: 404, message: `商品 ${dbProduct.name} 的所选规格 ${item.specName || item.specId} 不存在` };
+        }
+        currentPrice = selectedSpec.price;
+        currentStock = selectedSpec.stock;
+      }
 
       if (currentStock < item.quantity) {
         await transaction.rollback();
-        return { code: 400, message: `商品 ${dbProduct.name} 库存不足 (仅剩${currentStock}件)` };
+        return { code: 400, message: `商品 ${dbProduct.name} ${currentSpecName} 库存不足 (仅剩${currentStock}件)` };
       }
       calculatedServerProductAmount += currentPrice * item.quantity;
       processedOrderItems.push({
         productId: dbProduct._id,
         productName: dbProduct.name,
-        productImage: (dbProduct.images && dbProduct.images.length > 0) ? dbProduct.images[0] : (dbProduct.mainImage || ''), // 优先用images[0]
+        productImage: item.productImage || (dbProduct.images && dbProduct.images.length > 0) ? dbProduct.images[0] : (dbProduct.mainImage || ''),
         price: currentPrice,
         quantity: item.quantity,
-        // specId: item.specId || null, // 如果有规格
-        // specName: item.specName || '', // 如果有规格
+        specId: currentSpecId,
+        specName: currentSpecName,
         amount: currentPrice * item.quantity
       });
     }
-    // 金额格式化为两位小数
     calculatedServerProductAmount = parseFloat(calculatedServerProductAmount.toFixed(2));
 
-
-    // 4. 处理运费 (可以从前端传，也可以后端根据规则计算)
-    const serverShippingFee = parseFloat(shippingFee.toFixed(2)); // 假设直接信任前端的运费
-
-    // 5. 处理优惠券
+    const serverShippingFee = parseFloat(shippingFee.toFixed(2));
     let serverCouponAmount = 0;
-    let finalCouponInfo = null; // 存储使用的优惠券信息
+    let finalCouponInfo = null;
+
     if (couponId) {
       const couponRes = await transaction.collection('coupons').doc(couponId).get();
       if (!couponRes.data) {
@@ -102,17 +107,30 @@ async function internalCreateOrder(event, openid) {
         return { code: 400, message: '所选优惠券不存在' };
       }
       const coupon = couponRes.data;
-      if (coupon.status !== 'available' || coupon._openid !== openid || (coupon.minAmount && calculatedServerProductAmount < coupon.minAmount) || (coupon.endTime && new Date(coupon.endTime) < new Date())) {
+      const nowForCouponCheck = new Date(); // 用于优惠券有效期检查
+      if (coupon.status !== 'available' || coupon._openid !== openid || (coupon.minAmount && calculatedServerProductAmount < coupon.minAmount) || (coupon.startTime && new Date(coupon.startTime) > nowForCouponCheck) || (coupon.endTime && new Date(coupon.endTime) < nowForCouponCheck) ) {
         await transaction.rollback();
         return { code: 400, message: '优惠券无效或不满足使用条件' };
       }
-      serverCouponAmount = parseFloat(coupon.amount.toFixed(2));
-      finalCouponInfo = { // 记录优惠券信息到订单
+      // 根据优惠券类型计算优惠金额
+      if (coupon.type === 'fixed_amount') {
+        serverCouponAmount = parseFloat(coupon.amount.toFixed(2));
+      } else if (coupon.type === 'discount') {
+        serverCouponAmount = parseFloat((calculatedServerProductAmount * (1 - coupon.amount)).toFixed(2));
+        if (serverCouponAmount < 0) serverCouponAmount = 0; // 防止折扣算出来是负数（虽然不太可能）
+      } else {
+        // 其他类型优惠券暂不处理或报错
+        await transaction.rollback();
+        return { code: 400, message: '不支持的优惠券类型' };
+      }
+
+      finalCouponInfo = {
         couponId: coupon._id,
         name: coupon.name,
-        amount: coupon.amount
+        amountDeducted: serverCouponAmount, // 实际抵扣的金额
+        type: coupon.type,
+        value: coupon.amount // 券面值或折扣率
       };
-      // 标记优惠券已使用
       await transaction.collection('coupons').doc(couponId).update({
         data: {
           status: 'used',
@@ -122,21 +140,15 @@ async function internalCreateOrder(event, openid) {
       });
     }
     
-    // 6. 计算最终支付金额 (后端计算为准)
     const serverTotalAmount = parseFloat((calculatedServerProductAmount + serverShippingFee - serverCouponAmount).toFixed(2));
 
-    // 7. 金额校验 (可选，但建议有)
-    // 允许一定误差，比如0.01元
     if (Math.abs(serverTotalAmount - parseFloat(totalAmount.toFixed(2))) > 0.01) {
-      console.warn(`订单金额校验警告：前端总额 ${totalAmount}, 后端计算总额 ${serverTotalAmount}`);
-      // 可以选择回滚或继续，取决于业务策略
-      // await transaction.rollback();
-      // return { code: 400, message: '订单金额校验失败，请重新提交' };
+      console.warn(`订单金额校验警告：前端总额 ${totalAmount}, 后端计算总额 ${serverTotalAmount}. 使用后端计算值.`);
+      // 使用后端计算结果为准
     }
 
-    // 8. 生成订单号及创建时间
     const orderNo = generateOrderNumber();
-    const now = db.serverDate(); // 使用服务端时间
+    const now = db.serverDate();
 
     const orderData = {
       _openid: openid,
@@ -144,9 +156,9 @@ async function internalCreateOrder(event, openid) {
       orderItems: processedOrderItems,
       productAmount: calculatedServerProductAmount,
       shippingFee: serverShippingFee,
-      couponAmount: serverCouponAmount,
-      totalAmount: serverTotalAmount, // 使用后端计算的总金额
-      shippingAddress: { // 存储地址快照
+      couponAmount: serverCouponAmount, // 记录实际抵扣的金额
+      totalAmount: serverTotalAmount, 
+      shippingAddress: {
         name: shippingAddress.name,
         phone: shippingAddress.phone,
         province: shippingAddress.province,
@@ -158,21 +170,20 @@ async function internalCreateOrder(event, openid) {
       },
       couponInfo: finalCouponInfo,
       remark: remark || '',
-      status: 'unpaid', // 初始状态为待付款
+      status: 'unpaid',
       createTime: now,
       updateTime: now,
       payTime: null,
       shipTime: null,
       completeTime: null,
       cancelTime: null,
-      hasReviewed: false // 是否已评价
+      hasReviewed: false,
+      paymentInfo: null
     };
 
-    // 9. 创建订单记录
     const newOrderRes = await transaction.collection('orders').add({ data: orderData });
     const newOrderId = newOrderRes._id;
 
-    // 10. 更新商品库存和销量
     const productUpdatePromises = [];
     for (const item of processedOrderItems) {
       productUpdatePromises.push(
@@ -186,45 +197,36 @@ async function internalCreateOrder(event, openid) {
     }
     await Promise.all(productUpdatePromises);
 
-    // 11. 如果使用了优惠券，回填订单ID到优惠券记录 (可选)
     if (couponId && newOrderId) {
       await transaction.collection('coupons').doc(couponId).update({
         data: { orderId: newOrderId }
       });
     }
 
-    await transaction.commit(); // 提交事务
+    await transaction.commit();
     return {
       code: 0,
       message: '订单创建成功',
       data: {
         orderId: newOrderId,
         orderNo,
-        totalAmount: serverTotalAmount // 返回最终需要支付的金额
+        totalAmount: serverTotalAmount
       }
     };
 
   } catch (e) {
-    await transaction.rollback(); // 发生任何错误都回滚事务
+    await transaction.rollback();
     console.error('internalCreateOrder error:', e);
     return { code: 500, message: '订单创建失败，请稍后再试', error: e.errMsg || e.message || e };
   }
 }
 
 
-/**
- * 获取订单列表
- * @param {object} event - 包含分页、状态等参数
- * @param {string} [event.status] - 订单状态 (unpaid, unshipped, shipped, completed, cancelled)
- * @param {number} [event.page=1] - 页码
- * @param {number} [event.pageSize=10] - 每页数量
- * @param {string} openid - 用户 OpenID
- */
 async function internalListOrders(event, openid) {
   const { status, page = 1, pageSize = 10 } = event;
   try {
     const query = { _openid: openid };
-    if (status && status !== 'all') { // 'all' 表示查询所有
+    if (status && status !== 'all') {
       query.status = status;
     }
 
@@ -255,12 +257,6 @@ async function internalListOrders(event, openid) {
   }
 }
 
-/**
- * 获取订单详情
- * @param {object} event - 包含订单ID
- * @param {string} event.orderId - 订单ID
- * @param {string} openid - 用户 OpenID
- */
 async function internalGetOrderDetail(event, openid) {
   const { orderId } = event;
   if (!orderId) {
@@ -271,50 +267,41 @@ async function internalGetOrderDetail(event, openid) {
     if (!orderRes.data) {
       return { code: 404, message: '订单不存在' };
     }
-    // 校验订单是否属于当前用户
     if (orderRes.data._openid !== openid) {
       return { code: 403, message: '无权查看此订单' };
     }
     return { code: 0, message: '获取订单详情成功', data: orderRes.data };
   } catch (e) {
     console.error('internalGetOrderDetail error:', e);
+    if (e.errMsg && e.errMsg.includes('document_non_exist')) {
+        return { code: 404, message: '订单不存在 (DB)' };
+    }
     return { code: 500, message: '获取订单详情失败', error: e.errMsg || e.message };
   }
 }
 
-/**
- * 按状态统计订单数量
- * @param {string} openid - 用户 OpenID
- */
 async function internalCountOrdersByStatus(openid) {
   try {
     const counts = {
       unpaid: 0,
       unshipped: 0,
       shipped: 0,
-      // completed: 0, // 如果前端需要已完成的统计
-      // afterSale: 0 // 如果有售后状态
     };
-    const statusesToCount = ['unpaid', 'unshipped', 'shipped']; // 根据前端个人中心需要的状态来定
+    const statusesToCount = ['unpaid', 'unshipped', 'shipped'];
 
-    for (const status of statusesToCount) {
-      const result = await db.collection('orders').where({ _openid: openid, status: status }).count();
-      counts[status] = result.total;
+    const aggregateResult = await db.collection('orders')
+      .aggregate()
+      .match({ _openid: openid, status: _.in(statusesToCount) })
+      .group({ _id: '$status', count: $.sum(1) })
+      .end();
+    
+    if (aggregateResult.list) {
+      aggregateResult.list.forEach(item => {
+        if (counts.hasOwnProperty(item._id)) {
+          counts[item._id] = item.count;
+        }
+      });
     }
-    // 你也可以一次性聚合查询，但分开查对于少量状态也还好
-    // const aggregateResult = await db.collection('orders')
-    //   .aggregate()
-    //   .match({ _openid: openid, status: _.in(statusesToCount) })
-    //   .group({ _id: '$status', count: $.sum(1) })
-    //   .end();
-    // console.log(aggregateResult);
-    // if (aggregateResult.list) {
-    //   aggregateResult.list.forEach(item => {
-    //     if (counts.hasOwnProperty(item._id)) {
-    //       counts[item._id] = item.count;
-    //     }
-    //   });
-    // }
 
     return { code: 0, message: '获取订单数量统计成功', data: counts };
   } catch (e) {
@@ -323,13 +310,6 @@ async function internalCountOrdersByStatus(openid) {
   }
 }
 
-/**
- * 获取支付参数 (模拟)
- * 实际项目中，这里应该调用微信支付统一下单API，并返回给前端调起支付所需的参数
- * @param {object} event - 包含订单ID
- * @param {string} event.orderId - 订单ID
- * @param {string} openid - 用户 OpenID
- */
 async function internalGetPaymentParams(event, openid) {
   const { orderId } = event;
   if (!orderId) {
@@ -347,54 +327,25 @@ async function internalGetPaymentParams(event, openid) {
       return { code: 400, message: '订单状态非待付款，无法支付' };
     }
 
-    // --- 模拟微信支付统一下单成功返回的参数 ---
-    // ！！！注意：以下是模拟数据，实际生产环境需要对接微信支付SDK生成真实参数！！！
+    // 模拟微信支付参数 (实际生产中需要调用微信支付统一下单API)
     const paymentParams = {
-      timeStamp: String(Math.floor(Date.now() / 1000)), // 时间戳 (秒)
-      nonceStr: Math.random().toString(36).substr(2, 15), // 随机字符串
-      package: `prepay_id=wx${Date.now()}${Math.floor(Math.random()*100000)}`, // 预支付交易会话标识
-      signType: 'MD5', // 或 RSA，根据实际配置
-      paySign: 'SIMULATED_PAYSIGN_NEED_REAL_IMPLEMENTATION', // 签名，非常重要！
-      // 以下为可选参数，根据实际情况
-      // appId: cloud.getWXContext().APPID, // 小程序AppID (如果云函数配置中没有自动注入)
-      // mch_id: 'YOUR_MERCHANT_ID', // 你的商户号
+      timeStamp: String(Math.floor(Date.now() / 1000)),
+      nonceStr: Math.random().toString(36).substr(2, 15),
+      package: `prepay_id=wx_sim_${Date.now()}${Math.floor(Math.random()*100000)}`,
+      signType: 'MD5', 
+      paySign: 'SIMULATED_PAYSIGN_FOR_DEMO_ONLY', 
     };
-    // 实际项目中，你会用 orderRes.data.orderNo, orderRes.data.totalAmount, openid 等信息去调用微信支付的统一下单接口。
-    // 微信支付的云调用方法：cloud.cloudPay.unifiedOrder({...})
+    // 注意：此处的 paymentParams 仅为模拟，无法发起真实支付
+    // 真实支付需要使用 cloud.cloudPay.unifiedOrder 或后端调用微信支付API
 
-    // 模拟支付成功后，更新订单状态 (这部分逻辑应该在支付回调中处理，这里只是模拟)
-    // setTimeout(async () => {
-    //   try {
-    //     await db.collection('orders').doc(orderId).update({
-    //       data: {
-    //         status: 'unshipped', // 假设支付成功后变为待发货
-    //         payTime: db.serverDate(),
-    //         paymentInfo: { // 可以记录一些支付信息
-    //           transaction_id: 'simulated_transaction_id_' + Date.now(),
-    //           payMethod: '微信支付'
-    //         }
-    //       }
-    //     });
-    //     console.log(`订单 ${orderId} 模拟支付成功，状态更新为待发货`);
-    //   } catch (updateError) {
-    //     console.error(`模拟支付后更新订单 ${orderId} 状态失败:`, updateError);
-    //   }
-    // }, 3000); // 模拟3秒后支付成功
-
-
-    return { code: 0, message: '获取支付参数成功 (模拟)', data: { paymentParams } };
+    return { code: 0, message: '获取支付参数成功 (模拟)', data: { paymentParams, orderNo: orderRes.data.orderNo, totalAmount: orderRes.data.totalAmount } };
   } catch (e) {
     console.error('internalGetPaymentParams error:', e);
     return { code: 500, message: '获取支付参数失败', error: e.errMsg || e.message };
   }
 }
 
-/**
- * 取消订单
- * @param {object} event - 包含订单ID
- * @param {string} event.orderId - 订单ID
- * @param {string} openid - 用户 OpenID
- */
+
 async function internalCancelOrder(event, openid) {
   const { orderId } = event;
   if (!orderId) { return { code: 400, message: '缺少订单ID参数' }; }
@@ -410,12 +361,11 @@ async function internalCancelOrder(event, openid) {
       await transaction.rollback();
       return { code: 403, message: '无权操作此订单' };
     }
-    if (orderRes.data.status !== 'unpaid') { // 只有未付款的订单才能取消
+    if (orderRes.data.status !== 'unpaid') {
       await transaction.rollback();
       return { code: 400, message: '订单状态无法取消' };
     }
 
-    // 1. 更新订单状态为已取消
     await transaction.collection('orders').doc(orderId).update({
       data: {
         status: 'cancelled',
@@ -424,22 +374,20 @@ async function internalCancelOrder(event, openid) {
       }
     });
 
-    // 2. 恢复商品库存
     const productUpdatePromises = orderRes.data.orderItems.map(item => {
       return transaction.collection('products').doc(item.productId).update({
         data: {
-          stock: _.inc(item.quantity), // 增加库存
-          sales: _.inc(-item.quantity) // 减少销量
+          stock: _.inc(item.quantity),
+          sales: _.inc(-item.quantity)
         }
       });
     });
     await Promise.all(productUpdatePromises);
 
-    // 3. 如果使用了优惠券，恢复优惠券状态
     if (orderRes.data.couponInfo && orderRes.data.couponInfo.couponId) {
       await transaction.collection('coupons').doc(orderRes.data.couponInfo.couponId).update({
         data: {
-          status: 'available', // 恢复为可用
+          status: 'available',
           useTime: null,
           orderId: null
         }
@@ -455,12 +403,6 @@ async function internalCancelOrder(event, openid) {
   }
 }
 
-/**
- * 确认收货
- * @param {object} event - 包含订单ID
- * @param {string} event.orderId - 订单ID
- * @param {string} openid - 用户 OpenID
- */
 async function internalConfirmReceive(event, openid) {
   const { orderId } = event;
   if (!orderId) { return { code: 400, message: '缺少订单ID参数' }; }
@@ -468,13 +410,13 @@ async function internalConfirmReceive(event, openid) {
     const orderRes = await db.collection('orders').doc(orderId).get();
     if (!orderRes.data) { return { code: 404, message: '订单不存在' }; }
     if (orderRes.data._openid !== openid) { return { code: 403, message: '无权操作此订单' }; }
-    if (orderRes.data.status !== 'shipped') { // 只有已发货的订单才能确认收货
+    if (orderRes.data.status !== 'shipped') { 
       return { code: 400, message: '订单状态无法确认收货' };
     }
 
     await db.collection('orders').doc(orderId).update({
       data: {
-        status: 'completed', // 或 'toEvaluate' (待评价)
+        status: 'completed', 
         completeTime: db.serverDate(),
         updateTime: db.serverDate()
       }
@@ -486,12 +428,6 @@ async function internalConfirmReceive(event, openid) {
   }
 }
 
-/**
- * 获取待评价订单详情 (简化版，主要返回商品列表用于评价)
- * @param {object} event - 包含订单ID
- * @param {string} event.orderId - 订单ID
- * @param {string} openid - 用户 OpenID
- */
 async function internalGetDetailForReview(event, openid) {
     const { orderId } = event;
     if (!orderId) { return { code: 400, message: '缺少订单ID参数' }; }
@@ -499,22 +435,21 @@ async function internalGetDetailForReview(event, openid) {
         const orderRes = await db.collection('orders').doc(orderId).get();
         if (!orderRes.data) { return { code: 404, message: '订单不存在' }; }
         if (orderRes.data._openid !== openid) { return { code: 403, message: '无权操作此订单' }; }
-        // 校验订单是否可以评价，例如状态为 'completed' 且 hasReviewed 为 false
-        if (orderRes.data.status !== 'completed' && orderRes.data.status !== 'toEvaluate') { // 假设 'toEvaluate' 也是可评价状态
+        
+        if (orderRes.data.status !== 'completed' && orderRes.data.status !== 'toEvaluate') { 
              return { code: 400, message: '当前订单状态无法评价' };
         }
         if (orderRes.data.hasReviewed === true) {
             return { code: 400, message: '该订单已评价过' };
         }
 
-        // 返回订单中的商品列表给前端进行评价
         return {
             code: 0,
             message: '获取待评价订单信息成功',
             data: {
                 orderId: orderRes.data._id,
                 orderNo: orderRes.data.orderNo,
-                orderItems: orderRes.data.orderItems // 前端需要这个列表来逐个评价
+                orderItems: orderRes.data.orderItems 
             }
         };
     } catch (e) {
@@ -523,12 +458,6 @@ async function internalGetDetailForReview(event, openid) {
     }
 }
 
-/**
- * 获取订单摘要 (支付结果页用)
- * @param {object} event - 包含订单ID
- * @param {string} event.orderId - 订单ID
- * @param {string} openid - 用户 OpenID
- */
 async function internalGetOrderSummary(event, openid) {
     const { orderId } = event;
     if (!orderId) { return { code: 400, message: '缺少订单ID参数' }; }
@@ -537,7 +466,6 @@ async function internalGetOrderSummary(event, openid) {
         if (!orderRes.data) { return { code: 404, message: '订单不存在' }; }
         if (orderRes.data._openid !== openid) { return { code: 403, message: '无权查看此订单' }; }
 
-        // 返回订单号和总金额等摘要信息
         return {
             code: 0,
             message: '获取订单摘要成功',
@@ -546,7 +474,6 @@ async function internalGetOrderSummary(event, openid) {
                 orderNo: orderRes.data.orderNo,
                 totalAmount: orderRes.data.totalAmount,
                 status: orderRes.data.status
-                // 可以根据需要添加更多摘要字段
             }
         };
     } catch (e) {
@@ -555,51 +482,110 @@ async function internalGetOrderSummary(event, openid) {
     }
 }
 
-
 /**
- * 订单管理主函数，根据 action 分发任务
+ * 新增：标记订单为已支付并更新状态为待发货
+ * @param {object} event - 包含订单ID
+ * @param {string} event.orderId - 订单ID
+ * @param {string} [event.transaction_id] - (可选) 微信支付订单号
+ * @param {string} openid - 用户 OpenID
  */
+async function internalMarkOrderAsPaid(event, openid) {
+  const { orderId, transaction_id } = event; // transaction_id 可选
+  if (!orderId) {
+    return { code: 400, message: '缺少订单ID参数 (markOrderAsPaid)' };
+  }
+
+  const transaction = await db.startTransaction();
+  try {
+    const orderRes = await transaction.collection('orders').doc(orderId).get();
+    if (!orderRes.data) {
+      await transaction.rollback();
+      return { code: 404, message: '订单不存在 (markOrderAsPaid)' };
+    }
+    if (orderRes.data._openid !== openid) {
+      await transaction.rollback();
+      return { code: 403, message: '无权操作此订单 (markOrderAsPaid)' };
+    }
+    
+    if (orderRes.data.status !== 'unpaid') {
+      console.warn(`[CloudFunc orders/markOrderAsPaid] Order ${orderId} status was ${orderRes.data.status}, not 'unpaid'. Will not update again or treat as already paid.`);
+      // 根据业务逻辑，如果已经是unshipped或更高状态，可以认为已处理
+      if (['unshipped', 'shipped', 'completed'].includes(orderRes.data.status)) {
+          await transaction.rollback(); // 事务回滚，因为没有做任何更改
+          return { code: 0, message: '订单已是支付后状态，无需重复更新' }; // 返回成功，前端继续刷新即可
+      }
+      // 如果是其他非预期状态，可能需要特定处理，或允许覆盖
+    }
+
+    const paymentInfoToUpdate = {
+        payMethod: '微信支付', // 默认为微信支付
+        status: 'SUCCESS', // 标记支付成功
+        payTime: db.serverDate() // 记录支付时间
+    };
+    if (transaction_id) {
+        paymentInfoToUpdate.transaction_id = transaction_id;
+    }
+
+    const updateResult = await transaction.collection('orders').doc(orderId).update({
+      data: {
+        status: 'unshipped', // 关键：将状态更新为“待发货”
+        payTime: db.serverDate(), // 记录支付时间 (与 paymentInfo 中的 payTime 一致)
+        updateTime: db.serverDate(),
+        paymentInfo: paymentInfoToUpdate
+      }
+    });
+
+    if (updateResult.stats.updated > 0) {
+      await transaction.commit();
+      console.log(`[CloudFunc orders/markOrderAsPaid] Order ${orderId} by user ${openid} marked as paid, status updated to unshipped.`);
+      return { code: 0, message: '订单支付状态更新成功' };
+    } else {
+      await transaction.rollback();
+      console.warn(`[CloudFunc orders/markOrderAsPaid] Order ${orderId} update returned 0 affected documents. Possible concurrency or data mismatch.`);
+      return { code: 501, message: '订单状态更新失败，记录未被修改' }; // 特定错误码
+    }
+
+  } catch (e) {
+    await transaction.rollback();
+    console.error('[CloudFunc orders/markOrderAsPaid] Error:', e);
+    return { code: 500, message: '更新订单支付状态时发生服务器错误', error: e.message || e.errMsg || e };
+  }
+}
+
+
 exports.main = async (event, context) => {
   const { action, ...restEventData } = event;
   const wxContext = cloud.getWXContext();
-  const openid = wxContext.OPENID; // 获取调用用户的openid
+  const openid = wxContext.OPENID;
 
-  if (!openid && action !== 'somePublicAction') { // 假设有一个不需要openid的例外
+  if (!openid && action !== 'somePublicActionWithoutLoginRequirement') { // 确保有一个明确的例外action列表
     console.error('Orders function called without openid for action:', action);
     return { code: 401, message: '用户身份校验失败，请重新登录 (orders cloud function)' };
   }
 
-  // 将 openid 和剩余参数传递给内部函数
-  // 注意：对于 createOrder，它自己也接收一个 event 对象，所以直接把 restEventData 传过去，并在内部函数中解构
-  // 其他函数如果只需要特定参数，可以修改调用方式
-  console.log(`Orders function called with action: ${action}, openid: ${openid ? 'present' : 'missing'}`);
+  console.log(`[CloudFunc orders] Action: ${action}, Caller OpenID: ${openid ? '******' : 'N/A (or public action)'}`);
 
   switch (action) {
     case 'create':
-      // event 包含了 addressId, items, couponId, remark, totalAmount, shippingFee 等
       return internalCreateOrder(restEventData, openid);
     case 'list':
-      // event 可能包含 status, page, pageSize
       return internalListOrders(restEventData, openid);
     case 'detail':
-      // event 应该包含 orderId
       return internalGetOrderDetail(restEventData, openid);
     case 'countByStatus':
-      // 此操作通常不需要前端额外参数，只基于 openid
       return internalCountOrdersByStatus(openid);
     case 'getPaymentParams':
-      // event 应该包含 orderId
       return internalGetPaymentParams(restEventData, openid);
     case 'cancel':
-      // event 应该包含 orderId
       return internalCancelOrder(restEventData, openid);
     case 'confirmReceive':
-      // event 应该包含 orderId
       return internalConfirmReceive(restEventData, openid);
-    case 'getDetailForReview': // 新增：获取待评价订单详情
+    case 'getDetailForReview':
       return internalGetDetailForReview(restEventData, openid);
-    case 'getSummary': // 新增：获取订单摘要
+    case 'getSummary':
       return internalGetOrderSummary(restEventData, openid);
+    case 'markOrderAsPaid': // 新增的action
+      return internalMarkOrderAsPaid(restEventData, openid);
     default:
       console.warn(`Orders function called with unsupported action: ${action}`);
       return { code: 400, message: `订单操作不支持的 action: ${action} (orders cloud function)` };

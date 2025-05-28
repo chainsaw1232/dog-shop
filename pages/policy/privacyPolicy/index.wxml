@@ -1,0 +1,44 @@
+<scroll-view scroll-y class="policy-page-container">
+  <view class="policy-header">
+    <view class="policy-main-title">火山零食小卖部 隐私政策</view>
+    <view class="policy-meta-info">
+      <text>最后更新日期：[请填写您的更新日期，例如：2025年05月28日]</text>
+      <text>生效日期：[请填写您的生效日期，例如：2025年05月28日]</text>
+    </view>
+  </view>
+
+  <view class="policy-body-content">
+    <view class="policy-section policy-emphasis-box">
+      <view class="policy-paragraph bold">
+        “火山零食小卖部”（以下简称“我们”）深知个人信息对您的重要性，我们将严格遵守法律法规要求，采取相应的安全保护措施，尽力保护您的个人信息安全可控。请您在使用我们的产品/服务前，仔细阅读并充分理解本《隐私政策》（以下简称“本政策”），特别是以粗体标识的条款。您点击同意、开始使用本小程序服务或以其他方式确认接受本政策，即表示您已充分理解并同意本政策。
+      </view>
+    </view>
+
+    <view class="policy-section">
+      <view class="policy-section-title">一、我们如何收集和使用您的个人信息</view>
+      <text class="policy-paragraph">为实现本小程序的基本业务功能及附加功能，我们可能需要收集和使用您的以下个人信息：</text>
+      <text class="policy-paragraph">1.1 账户注册与登录：当您通过微信授权登录时，我们将收集您的微信唯一标识（OpenID）、昵称、头像。这些是为您提供个性化服务和账户识别的基础。</text>
+      <text class="policy-paragraph">1.2 商品/服务信息展示和搜索：为了向您展示商品或服务，并方便您进行搜索，我们可能会收集您的设备信息（如设备型号、操作系统版本）、浏览器类型、以及您的搜索关键词、浏览记录。请注意，单独的设备信息、搜索关键词信息等是无法识别特定自然人身份的信息，不属于您的个人信息，我们有权以任何合法目的对其进行使用；只有当您的设备信息、搜索关键词信息与您的其他信息相互结合使用并可以识别您的身份时，则在结合使用期间，我们会将这些信息作为您的个人信息，按照本政策对其进行处理与保护。</text>
+      <text class="policy-paragraph">1.3 下单与订单管理：当您在本小程序购买商品或服务时，您需要在订单中至少填写您的收货人姓名、收货地址及联系电话。同时该订单中会载明您所购买的商品或服务信息、具体订单号、订单创建时间、您应支付的金额。我们收集这些信息是为了帮助您顺利完成交易、保障您的交易安全、查询订单信息、提供客服与售后服务及其他我们明确告知的目的。</text>
+      <text class="policy-paragraph">1.4 支付功能：在您下单后，您可以选择微信支付等第三方支付机构所提供的支付服务。支付功能本身并不收集您的个人信息，但我们需要将您的订单号与交易金额信息与这些支付机构共享以实现其确认您的支付指令并完成支付。我们不会获取您的银行卡号、支付密码等敏感信息。</text>
+      <text class="policy-paragraph">1.5 客服与售后功能：当您与我们的客服联系或提出售中售后服务申请时，为了保障您的账户及系统安全，我们可能需要您提供必要的个人信息以核验您的用户身份。我们还可能保存您的联系方式（您与我们联系时使用的或您向我们主动提供的其他联系方式）、您与我们的通信/通话记录和内容、与您需求相关联的其他必要信息，以便与您联系或帮助您解决问题，或记录相关问题的处理方案及结果。</text>
+      <text class="policy-paragraph">1.6 商品评价与内容发布：您可以在本小程序发布商品评价、提问、分享等内容。我们会收集您发布的信息，并展示您的昵称、头像和发布内容。</text>
+       </view>
+
+    <view class="policy-section">
+      <view class="policy-section-title">Y、最终解释权及其他（请根据实际情况编号）</view>
+       <view class="policy-critical-note">
+        <text class="policy-paragraph bold">【商家声明】应您的要求，特此加入以下条款：“本隐私政策的一切解释权最终归火山零食小卖部所有。”</text>
+        <text class="legal-disclaimer-text">（重要提示：请注意，此“最终解释权”条款的法律效力可能受到适用法律法规的限制，尤其在涉及消费者权益保护时，通常倾向于保护消费者。我们强烈建议您就此条款的措辞、适用范围及其法律后果咨询专业的法律顾问，以确保其合规性和可执行性，并避免潜在的法律风险。）</text>
+      </view>
+    </view>
+
+    <view class="policy-section contact-info-section">
+      <view class="policy-section-title">Z、如何联系我们（请根据实际情况编号）</view>
+      <text class="policy-paragraph">如果您对本隐私政策有任何疑问、意见或建议，或者您希望行使任何与您个人信息相关的权利，请通过以下方式与我们联系：</text>
+      <text class="policy-paragraph">电子邮箱：[请填写您的客服邮箱或数据保护负责人邮箱]</text>
+      <text class="policy-paragraph">客服电话：[请填写您的客服电话]</text>
+      <text class="policy-paragraph">一般情况下，我们将在收到您相关联系信息并核实您身份后的十五个工作日内予以回复。</text>
+    </view>
+  </view>
+</scroll-view>

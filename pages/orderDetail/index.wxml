@@ -34,7 +34,7 @@
             <view class="item-spec" wx:if="{{item.specName}}">{{item.specName}}</view>
           </view>
           <view class="item-price-quantity">
-            <view class="item-price">¥{{item.price.toFixed(2)}}</view>
+            <view class="item-price">¥{{item.priceFormatted}}</view>
             <view class="item-quantity">x {{item.quantity}}</view>
           </view>
         </view>
@@ -43,19 +43,19 @@
       <view class="info-section amount-details-section">
         <view class="amount-item">
           <text class="label">商品总额</text>
-          <text class="value">¥{{orderDetail.productAmount.toFixed(2)}}</text>
+          <text class="value">¥{{orderDetail.productAmountFormatted}}</text>
         </view>
         <view class="amount-item">
           <text class="label">运费</text>
-          <text class="value">¥{{orderDetail.shippingFee.toFixed(2)}}</text>
+          <text class="value">¥{{orderDetail.shippingFeeFormatted}}</text>
         </view>
         <view class="amount-item" wx:if="{{orderDetail.couponAmount > 0}}">
           <text class="label">优惠券</text>
-          <text class="value discount-value">- ¥{{orderDetail.couponAmount.toFixed(2)}}</text>
+          <text class="value discount-value">- ¥{{orderDetail.couponAmountFormatted}}</text>
         </view>
         <view class="amount-item total-payable">
           <text class="label">实付款</text>
-          <text class="value total-value">¥{{orderDetail.totalAmount.toFixed(2)}}</text>
+          <text class="value total-value">¥{{orderDetail.totalAmountFormatted}}</text>
         </view>
       </view>
       
@@ -77,7 +77,7 @@
           <text class="label">支付时间：</text>
           <text class="value">{{orderDetail.payTimeFormatted}}</text>
         </view>
-         <view class="specific-item" wx:if="{{orderDetail.paymentInfo && orderDetail.paymentInfo.payMethod}}">
+          <view class="specific-item" wx:if="{{orderDetail.paymentInfo && orderDetail.paymentInfo.payMethod}}">
           <text class="label">支付方式：</text>
           <text class="value">{{orderDetail.paymentInfo.payMethod}}</text>
         </view>
@@ -106,7 +106,7 @@
       <view class="safe-area-for-buttons"></view>
     </scroll-view>
 
-    <view class="action-button-bar" wx:if="{{orderDetail.status !== 'cancelled' && orderDetail.status !== 'completed' || (orderDetail.status === 'completed' && !orderDetail.hasReviewed)}}">
+    <view class="action-button-bar" wx:if="{{!isLoading && orderDetail && (orderDetail.status !== 'cancelled' && orderDetail.status !== 'completed' || (orderDetail.status === 'completed' && !orderDetail.hasReviewed))}}">
       <button class="bar-btn secondary-btn" wx:if="{{orderDetail.status === 'unpaid'}}" bindtap="cancelOrder" disabled="{{isProcessingAction}}">取消订单</button>
       <button class="bar-btn primary-btn" wx:if="{{orderDetail.status === 'unpaid'}}" bindtap="payOrder" disabled="{{isProcessingAction}}">立即支付</button>
       
@@ -123,7 +123,7 @@
 
   <block wx:if="{{!isLoading && !orderDetail}}">
     <view class="empty-state-container full-page-state">
-       <empty-state 
+        <empty-state 
         type="order" 
         text="订单不存在或加载失败" 
         buttonText="返回列表" 

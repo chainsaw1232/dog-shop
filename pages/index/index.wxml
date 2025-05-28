@@ -54,7 +54,7 @@
         <text class="section-title">领券中心</text>
         <view class="section-more" bindtap="onMoreCouponTap">
           <text>更多</text>
-          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right_grey.png" class="arrow-icon"></image>
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png" class="arrow-icon"></image>
         </view>
       </view>
       <scroll-view class="coupon-scroll-view" scroll-x="true">
@@ -77,7 +77,7 @@
         <text class="section-title">新品尝鲜</text>
         <view class="section-more" bindtap="onMoreNewProductTap">
           <text>更多</text>
-          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right_grey.png" class="arrow-icon"></image>
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png" class="arrow-icon"></image>
         </view>
       </view>
       <view class="product-grid">
@@ -108,7 +108,7 @@
         <text class="section-title">热销榜单</text>
         <view class="section-more" bindtap="onMoreHotProductTap">
           <text>更多</text>
-          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right_grey.png" class="arrow-icon"></image>
+          <image src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png" class="arrow-icon"></image>
         </view>
       </view>
       <view class="product-grid">

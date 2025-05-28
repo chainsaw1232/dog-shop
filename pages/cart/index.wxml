@@ -5,11 +5,16 @@
   </view>
 
   <block wx:if="{{isCartEmpty && !isLoading}}">
-    <view class="empty-cart-container">
+    <view class="cart-empty-custom-container">
+      <view class="empty-logo-area">
+        <image class="empty-cart-logo-placeholder" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/logo/logo.png" mode="aspectFit"></image>
+        
+      </view>
+      <text class="empty-cart-message">你还没有商品加入购物车哦</text>
+      
       <empty-state 
         type="cart" 
-        text="购物车空空如也，去挑选几件宝贝吧~" 
-        buttonText="去逛逛" 
+        text="" buttonText="去逛逛" 
         showButton="{{true}}"
         bind:buttonclick="navigateToIndex">
       </empty-state>
@@ -46,7 +51,7 @@
           </view>
         </view>
       </view>
-       <view class="cart-list-bottom-padding"></view>
+      <view class="cart-list-bottom-padding"></view>
     </scroll-view>
   </block>
 
@@ -57,7 +62,7 @@
       <view class="line"></view>
     </view>
     <view class="recommend-product-grid">
-      <view class="product-card-wrapper" wx:for="{{recommendProducts}}" wx:key="_id">
+      <view class="product-card-wrapper" wx:for="{{recommendProducts}}" wx:key="_id" wx:for-item="item">
         <view class="product-card" bindtap="navigateToDetail" data-id="{{item._id}}">
           <image src="{{item.mainImage || item.imageUrl || '/static/images/products/default_product.png'}}" class="product-image-recommend" mode="aspectFill" lazy-load="true"></image>
           <view class="product-name-recommend">{{item.name}}</view>
@@ -74,17 +79,20 @@
     </view>
   </view>
 
-
   <view class="bottom-bar" wx:if="{{!isCartEmpty && !isLoading}}">
     <view class="select-all-area" bindtap="toggleSelectAll">
       <image class="checkbox-icon" src="{{allSelected ? CHOSEN_ICON_PATH : UNCHOSEN_ICON_PATH}}"></image>
       <text>全选</text>
     </view>
+
     <view class="total-info">
       <text class="total-text">合计：</text>
-      <text class="total-price">¥{{totalPrice}}</text>
-      <text class="selected-count-text">(共{{selectedCount}}件)</text>
+      <view class="price-details-column">
+        <text class="total-price">¥{{totalPrice}}</text>
+        <text class="selected-count-text">(共{{selectedCount}}件)</text>
+      </view>
     </view>
+    
     <button class="remove-selected-btn" bindtap="removeSelectedItems" disabled="{{selectedCount === 0 || isSubmitting}}">删除</button>
     <button class="checkout-btn" bindtap="checkout" disabled="{{selectedCount === 0 || isSubmitting}}">结算</button>
   </view>

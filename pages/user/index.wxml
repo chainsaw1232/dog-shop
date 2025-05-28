@@ -1,8 +1,34 @@
 <view class="container user-page">
   <view class="user-info-card">
-    <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
-    <view class="nickname" wx:if="{{userInfo.nickName && userInfo.nickName !== '汪汪用户'}}">{{userInfo.nickName}}</view>
-    <button wx:else class="login-button" open-type="getUserInfo" bindtap="login">点击登录</button>
+    <image class="avatar" src="{{isLoggedIn && userInfo.avatarUrl ? userInfo.avatarUrl : 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/avatar/default_avatar.png'}}" mode="aspectFill"></image>
+    
+    <block wx:if="{{isLoggedIn && userInfo.avatarUrl && userInfo.avatarUrl !== 'cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/avatar/default_avatar.png'}}">
+      <view class="nickname">{{userInfo.nickName}}</view>
+    </block>
+    
+    <block wx:else>
+      <view class="login-area"> 
+        <button class="auth-login-button" 
+                type="primary" 
+                bindtap="login" 
+                disabled="{{!isPolicyAgreed}}">
+          微信授权登录
+        </button>
+        <view class="policy-line"> 
+          <checkbox-group bindchange="onPolicyChange" class="policy-checkbox-group">
+            <label class="policy-checkbox-label">
+              <checkbox value="agreed" checked="{{isPolicyAgreed}}" class="custom-policy-checkbox"/>
+            </label>
+          </checkbox-group>
+          <view class="policy-text-wrapper"> 
+            <text class="static-policy-text">我已阅读并同意</text>
+            <text class="dynamic-policy-link" bindtap="navigateToUserAgreement">《用户协议》</text>
+            <text class="static-policy-text">和</text>
+            <text class="dynamic-policy-link" bindtap="navigateToPrivacyPolicy">《隐私政策》</text>
+          </view>
+        </view>
+      </view>
+    </block>
   </view>
 
   <view class="section-card order-section">
@@ -31,8 +57,9 @@
       <view class="order-status-item" bindtap="navigateToOrderList" data-type="completed">
         <image class="order-status-icon" src="{{orderStateIcons.completed}}"></image>
         <text>已完成</text>
-        </view>
-      <view class="order-status-item" bindtap="navigateToOrderList" data-type="afterSale"> <image class="order-status-icon" src="{{orderStateIcons.afterSale}}"></image>
+      </view>
+      <view class="order-status-item" bindtap="navigateToOrderList" data-type="afterSale">
+        <image class="order-status-icon" src="{{orderStateIcons.afterSale}}"></image>
         <text>售后</text>
         <view class="badge" wx:if="{{orderCount.afterSale > 0}}">{{orderCount.afterSale}}</view>
       </view>
@@ -43,27 +70,27 @@
     <view class="menu-item" bindtap="navigateToAddress">
       <image class="menu-icon" src="{{menuIcons.address}}"></image>
       <text class="menu-text">收货地址</text>
-      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
+      <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="navigateToCoupon">
       <image class="menu-icon" src="{{menuIcons.coupon}}"></image>
       <text class="menu-text">我的优惠券</text>
-      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
+      <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="navigateToFavorite">
       <image class="menu-icon" src="{{menuIcons.favorite}}"></image>
       <text class="menu-text">我的收藏</text>
-      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
+      <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="contactService">
       <image class="menu-icon" src="{{menuIcons.contactService}}"></image>
       <text class="menu-text">联系客服</text>
-      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
+      <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
     <view class="menu-item" bindtap="navigateToAbout">
       <image class="menu-icon" src="{{menuIcons.aboutUs}}"></image>
       <text class="menu-text">关于我们</text>
-      <image class="arrow-icon" src="	cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
+      <image class="arrow-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/我的个人中心界面图片/左箭头.png"></image>
     </view>
   </view>
 
@@ -79,5 +106,4 @@
       </view>
     </view>
   </view>
-
 </view>

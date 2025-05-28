@@ -1,57 +1,151 @@
-<view class="popup-mask {{showCoupon ? 'show' : ''}}" bindtap="hideCouponPopup">
-  <view class="coupon-popup-content" catchtap="doNothing"> <view class="coupon-popup-header">
-      <text class="popup-title">选择优惠券</text>
-      <image class="close-popup-btn" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/close_gray.png" bindtap="hideCouponPopup"></image>
-    </view>
+<view class="page">
+  <view class="address-section" bindtap="navigateToAddress">
+    <block wx:if="{{address}}">
+      <view class="address-details">
+        <view class="address-user-info">
+          <text>{{address.name}}</text>
+          <text>{{address.phone}}</text>
+        </view>
+        <text class="address-text">{{address.province || ''}}{{address.city || ''}}{{address.district || ''}}{{address.detail || ''}}</text>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="no-address">
+        <text>请选择或新建收货地址</text>
+      </view>
+    </block>
+    <image class="arrow-right" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right_gray.png" mode="aspectFit"></image>
+  </view>
 
-    <scroll-view scroll-y="true" class="coupon-popup-body">
-      <view 
-        class="coupon-item-wrapper no-coupon-option {{!tempSelectedCoupon ? 'selected' : ''}}" 
-        bindtap="selectNoCoupon">
-        <view class="coupon-item-inner">
-          <view class="coupon-main-info">
-            <text class="coupon-name">不使用优惠券</text>
+  <view class="order-items-section">
+    <view class="section-title-bar">商品信息 (共{{orderItems.length}}件)</view>
+    <block wx:if="{{orderItems && orderItems.length > 0}}">
+      <view class="order-item" wx:for="{{orderItems}}" wx:key="productId" wx:for-item="item">
+        <image 
+          class="product-image" 
+          src="{{item.productImage || '/static/images/products/default_product.png'}}" 
+          mode="aspectFill"
+        ></image>
+        <view class="product-details">
+          <view>
+            <text class="product-name">{{item.productName}}</text>
+            <text class="product-spec" wx:if="{{item.specName}}">{{item.specName}}</text>
           </view>
-          <view class="coupon-select-indicator">
-            <image wx:if="{{!tempSelectedCoupon}}" class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_checked_orange.png"></image>
-            <image wx:else class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_unchecked_gray.png"></image>
+          <view class="product-price-quantity">
+            <text class="product-price">¥{{item.price}}</text>
+            <text class="product-quantity">x{{item.quantity}}</text>
           </view>
         </view>
       </view>
+    </block>
+    <view wx:else class="no-items-placeholder">
+        <text>订单中没有商品</text>
+    </view>
+  </view>
 
-      <block wx:if="{{availableCoupons.length > 0}}">
+  <view class="order-options-section">
+    <view class="option-item">
+      <text class="option-label">配送方式</text>
+      <view class="option-value">
+        <text>普通快递</text>
+        </view>
+    </view>
+    <view class="option-item" bindtap="showCouponPopup">
+      <text class="option-label">优惠券</text>
+      <view class="coupon-display {{selectedCoupon ? 'available' : ''}}">
+        <text>{{selectedCoupon ? selectedCoupon.name : (availableCoupons.length > 0 ? availableCoupons.length + '张可用' : '暂无可用')}}</text>
+        <image class="arrow-right-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/arrow_right_gray.png" mode="aspectFit"></image>
+      </view>
+    </view>
+    <view class="option-item">
+      <text class="option-label">订单备注</text>
+      <input class="remark-input" placeholder-class="remark-placeholder" placeholder="选填，给商家留言" value="{{remark}}" bindinput="onRemarkInput" maxlength="100" />
+    </view>
+  </view>
+
+  <view class="amount-summary-section">
+    <view class="amount-item">
+      <text class="amount-label">商品金额</text>
+      <text class="amount-value">¥{{productAmount}}</text>
+    </view>
+    <view class="amount-item">
+      <text class="amount-label">运费</text>
+      <text class="amount-value">+ ¥{{shippingFee}}</text>
+    </view>
+    <view class="amount-item">
+      <text class="amount-label">优惠券</text>
+      <text class="amount-value {{couponAmount > 0 ? 'highlight-red' : ''}}">- ¥{{couponAmount}}</text>
+    </view>
+  </view>
+
+  <view class="submission-bar">
+    <view class="total-payable">
+      <text>合计：</text>
+      <text class="total-amount-value">¥{{totalAmount}}</text>
+    </view>
+    <button 
+      class="submit-order-btn {{isSubmitting || totalAmount <= 0 ? 'disabled' : ''}}" 
+      bindtap="submitOrder" 
+      disabled="{{isSubmitting || totalAmount <= 0}}"
+    >提交订单</button>
+  </view>
+
+  <view class="popup-mask {{showCoupon ? 'show' : ''}}" bindtap="hideCouponPopup">
+    <view class="coupon-popup-content" catchtap="doNothing">
+      <view class="coupon-popup-header">
+        <text class="popup-title">选择优惠券</text>
+        <image class="close-popup-btn" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/close_gray.png" bindtap="hideCouponPopup"></image>
+      </view>
+
+      <scroll-view scroll-y="true" class="coupon-popup-body">
         <view 
-          wx:for="{{availableCoupons}}" 
-          wx:key="_id" 
-          class="coupon-item-wrapper {{tempSelectedCoupon && tempSelectedCoupon._id === item._id ? 'selected' : ''}} {{item.disabled ? 'disabled' : ''}}" 
-          bindtap="{{item.disabled ? '' : 'selectCoupon'}}" 
-          data-coupon="{{item}}">
+          class="coupon-item-wrapper no-coupon-option {{!tempSelectedCoupon ? 'selected' : ''}}" 
+          bindtap="selectNoCoupon">
           <view class="coupon-item-inner">
-            <view class="coupon-value-section">
-              <text wx:if="{{item.type === 'fixed_amount'}}" class="coupon-currency">¥</text>
-              <text class="coupon-amount">{{item.type === 'fixed_amount' ? item.amount : (item.amount * 10)}}</text>
-              <text wx:if="{{item.type === 'discount'}}" class="coupon-unit">折</text>
-            </view>
             <view class="coupon-main-info">
-              <text class="coupon-name">{{item.name}}</text>
-              <text class="coupon-condition">满{{item.minAmount}}元可用</text>
-              <text class="coupon-validity" wx:if="{{item.startTimeFormatted && item.endTimeFormatted}}">有效期: {{item.startTimeFormatted}} - {{item.endTimeFormatted}}</text>
+              <text class="coupon-name">不使用优惠券</text>
             </view>
             <view class="coupon-select-indicator">
-              <image wx:if="{{tempSelectedCoupon && tempSelectedCoupon._id === item._id}}" class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_checked_orange.png"></image>
+              <image wx:if="{{!tempSelectedCoupon}}" class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_checked_orange.png"></image>
               <image wx:else class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_unchecked_gray.png"></image>
             </view>
           </view>
-           <view class="coupon-description" wx:if="{{item.description}}">{{item.description}}</view>
         </view>
-      </block>
-      <view wx:else class="no-coupons-in-popup">
-        <text>当前订单暂无其他可用优惠券</text>
-      </view>
-    </scroll-view>
 
-    <view class="coupon-popup-footer">
-      <button class="confirm-coupon-btn" bindtap="confirmCoupon">确定</button>
+        <block wx:if="{{availableCoupons && availableCoupons.length > 0}}">
+          <view 
+            wx:for="{{availableCoupons}}" 
+            wx:key="_id" 
+            class="coupon-item-wrapper {{tempSelectedCoupon && tempSelectedCoupon._id === item._id ? 'selected' : ''}} {{item.disabled ? 'disabled' : ''}}" 
+            bindtap="{{item.disabled ? '' : 'selectCoupon'}}" 
+            data-coupon="{{item}}">
+            <view class="coupon-item-inner">
+              <view class="coupon-value-section">
+                <text wx:if="{{item.type === 'fixed_amount'}}" class="coupon-currency">¥</text>
+                <text class="coupon-amount">{{item.type === 'fixed_amount' ? item.amount : (item.amount * 10)}}</text>
+                <text wx:if="{{item.type === 'discount'}}" class="coupon-unit">折</text>
+              </view>
+              <view class="coupon-main-info">
+                <text class="coupon-name">{{item.name}}</text>
+                <text class="coupon-condition">满{{item.minAmount}}元可用</text>
+                <text class="coupon-validity" wx:if="{{item.startTimeFormatted && item.endTimeFormatted}}">有效期: {{item.startTimeFormatted}} - {{item.endTimeFormatted}}</text>
+              </view>
+              <view class="coupon-select-indicator">
+                <image wx:if="{{tempSelectedCoupon && tempSelectedCoupon._id === item._id}}" class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_checked_orange.png"></image>
+                <image wx:else class="select-icon" src="cloud://cloud1-2gz5tcgibdf4bfc0.636c-cloud1-2gz5tcgibdf4bfc0-1360056125/images/icons/radio_unchecked_gray.png"></image>
+              </view>
+            </view>
+             <view class="coupon-description" wx:if="{{item.description}}">{{item.description}}</view>
+          </view>
+        </block>
+        <view wx:else class="no-coupons-in-popup">
+          <text>当前订单暂无其他可用优惠券</text>
+        </view>
+      </scroll-view>
+
+      <view class="coupon-popup-footer">
+        <button class="confirm-coupon-btn" bindtap="confirmCoupon">确定</button>
+      </view>
     </view>
   </view>
 </view>

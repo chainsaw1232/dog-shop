@@ -4,12 +4,15 @@ const util = require('../../utils/util.js');
 
 Page({
   data: {
-    favorites: [], // 收藏列表
-    page: 1, // 当前页码
-    pageSize: 10, // 每页数量
-    hasMore: true, // 是否有更多数据
-    isLoading: false, // 是否正在加载
-    isProcessingAction: false, // 防止重复操作
+    favorites: [], 
+    page: 1, 
+    pageSize: 10, 
+    hasMore: true, 
+    isLoading: false, 
+    isLoadingMore: false, // 新增：用于上拉加载更多的状态
+    isProcessingAction: false, 
+    recommendProducts: [],    // 新增
+    isRecommendLoading: false // 新增
   },
 
   onShow: function() {
@@ -17,7 +20,9 @@ Page({
       page: 1,
       favorites: [],
       hasMore: true,
-      isProcessingAction: false
+      isProcessingAction: false,
+      // recommendProducts: [], // 推荐商品可以不清空，避免重复加载，除非有特定刷新需求
+      // isRecommendLoading: false
     });
     this.fetchFavorites();
   },
@@ -27,7 +32,9 @@ Page({
       page: 1,
       favorites: [],
       hasMore: true,
-      isProcessingAction: false
+      isProcessingAction: false,
+      recommendProducts: [], // 下拉刷新时也重新加载推荐
+      isRecommendLoading: false
     });
     this.fetchFavorites().then(() => {
       wx.stopPullDownRefresh();
@@ -35,74 +42,136 @@ Page({
   },
 
   onReachBottom: function() {
-    if (this.data.hasMore && !this.data.isLoading) {
-      this.loadMore();
+    if (this.data.hasMore && !this.data.isLoadingMore && !this.data.isLoading) { // 确保不在初始加载或已在加载更多时触发
+      this.loadMoreFavorites();
     }
   },
 
-  fetchFavorites: function() {
+  fetchFavorites: function(isLoadMore = false) {
     if (!app.globalData.openid) {
       this.showLoginModal();
+      this.setData({ 
+        isLoading: false, 
+        isLoadingMore: false, 
+        favorites: [] 
+      });
+      if (this.data.recommendProducts.length === 0 && !this.data.isRecommendLoading) {
+          this.fetchRecommendProducts();
+      }
       return Promise.resolve();
     }
 
-    this.setData({ isLoading: true });
+    if (!isLoadMore) {
+      this.setData({ isLoading: true });
+    } else {
+      this.setData({ isLoadingMore: true });
+    }
 
     const params = {
       action: 'list',
       page: this.data.page,
       pageSize: this.data.pageSize
-      // openid is passed via context in cloud function
     };
 
     return new Promise((resolve, reject) => {
       wx.cloud.callFunction({
-        name: 'favorite', // Your favorite cloud function name
+        name: 'favorite',
         data: params,
         success: res => {
-          console.log('[pages/favorite/index.js] 云函数 favorite 调用成功 (list):', res);
           if (res.result && res.result.code === 0 && res.result.data) {
-            const newFavorites = res.result.data.list || [];
-            // Assuming product details like name, image, price are returned by the 'favorite' list action
-            // If not, you might need another call or adjust the 'favorite' cloud function
+            const newFavorites = (res.result.data.list || []).map(fav => ({
+                ...fav,
+                price: fav.price ? parseFloat(fav.price).toFixed(2) : 
+                       (fav.productPrice ? parseFloat(fav.productPrice).toFixed(2) : '0.00'),
+                originalPrice: fav.originalPrice ? parseFloat(fav.originalPrice).toFixed(2) : null
+            }));
+            
+            const updatedFavorites = isLoadMore ? this.data.favorites.concat(newFavorites) : newFavorites;
+            const hasMoreData = newFavorites.length === this.data.pageSize;
+
             this.setData({
-              favorites: this.data.page === 1 ? newFavorites : this.data.favorites.concat(newFavorites),
-              hasMore: newFavorites.length === this.data.pageSize,
-              isLoading: false
+              favorites: updatedFavorites,
+              hasMore: hasMoreData
             });
+            
+            if (updatedFavorites.length === 0 && this.data.recommendProducts.length === 0 && !this.data.isRecommendLoading) {
+              this.fetchRecommendProducts();
+            }
             resolve(res.result.data);
           } else {
             const errMsg = (res.result && res.result.message) ? res.result.message : '获取收藏失败';
             wx.showToast({ title: errMsg, icon: 'none' });
-            this.setData({ isLoading: false });
+            if (this.data.favorites.length === 0 && this.data.recommendProducts.length === 0 && !this.data.isRecommendLoading) {
+                this.fetchRecommendProducts();
+            }
             reject(new Error(errMsg));
           }
         },
         fail: err => {
           console.error('[pages/favorite/index.js] 云函数 favorite 调用失败 (list):', err);
           wx.showToast({ title: '网络请求失败', icon: 'none' });
-          this.setData({ isLoading: false });
+          if (this.data.favorites.length === 0 && this.data.recommendProducts.length === 0 && !this.data.isRecommendLoading) {
+              this.fetchRecommendProducts();
+          }
           reject(err);
+        },
+        complete: () => {
+            if (!isLoadMore) {
+                this.setData({ isLoading: false });
+            } else {
+                this.setData({ isLoadingMore: false });
+            }
         }
       });
     });
   },
 
-  loadMore: function() {
-    if (this.data.hasMore && !this.data.isLoading) {
-      this.setData({ page: this.data.page + 1 });
-      this.fetchFavorites();
-    }
+  loadMoreFavorites: function() { // Renamed from loadMore
+    this.setData({ page: this.data.page + 1 }, () => {
+      this.fetchFavorites(true); // Pass true for isLoadMore
+    });
+  },
+  
+  fetchRecommendProducts: function() {
+    if (this.data.isRecommendLoading) return;
+    this.setData({ isRecommendLoading: true });
+
+    wx.cloud.callFunction({
+      name: 'getProducts', 
+      data: {
+        action: 'list',
+        isRecommend: true, 
+        pageSize: 4 
+      }
+    })
+    .then(res => {
+      if (res.result && res.result.code === 0 && res.result.data && res.result.data.list) {
+        this.setData({
+          recommendProducts: res.result.data.list.map(p => ({
+              ...p,
+              price: p.price ? parseFloat(p.price).toFixed(2) : '0.00'
+          })),
+        });
+      } else {
+        this.setData({ recommendProducts: [] });
+      }
+    })
+    .catch(err => {
+      console.error('[Favorite Page] 获取推荐商品失败:', err);
+      this.setData({ recommendProducts: [] });
+    })
+    .finally(() => {
+        this.setData({ isRecommendLoading: false });
+    });
   },
 
   navigateToDetail: function(e) {
-    const productId = e.currentTarget.dataset.id; // Assuming the favorite item has productId
+    const productId = e.currentTarget.dataset.id;
     if (productId) {
       wx.navigateTo({
         url: `/pages/detail/index?id=${productId}`
       });
     } else {
-      console.warn("navigateToDetail: productId not found in dataset", e.currentTarget.dataset);
       util.showError("商品信息错误");
     }
   },
@@ -124,17 +193,16 @@ Page({
     wx.showLoading({ title: '添加中...' });
 
     wx.cloud.callFunction({
-      name: 'cart', // Your cart cloud function name
+      name: 'cart',
       data: {
         action: 'add',
         productId: productId,
         quantity: 1
-        // specId can be omitted if adding default spec or product has no specs
       },
       success: res => {
         if (res.result && res.result.code === 0) {
-          wx.showToast({ title: '添加成功', icon: 'success' });
-          app.getCartCount(); // Update cart badge
+          wx.showToast({ title: res.result.message || '添加成功', icon: 'success' });
+          app.getCartCount();
         } else {
           util.showError((res.result && res.result.message) || '添加失败');
         }
@@ -156,8 +224,8 @@ Page({
     }
     if (this.data.isProcessingAction) return;
 
-    const favoriteId = e.currentTarget.dataset.favoriteid; // _id of the favorite record itself
-    const productId = e.currentTarget.dataset.productid; // productId as fallback
+    const favoriteId = e.currentTarget.dataset.favoriteid;
+    const productId = e.currentTarget.dataset.productid;
 
     if (!favoriteId && !productId) {
         util.showError("无法确定要取消收藏的商品");
@@ -176,7 +244,7 @@ Page({
           if (favoriteId) {
               params.favoriteId = favoriteId;
           } else {
-              params.productId = productId; // Fallback to remove by productId
+              params.productId = productId;
           }
 
           wx.cloud.callFunction({
@@ -185,8 +253,13 @@ Page({
             success: cloudRes => {
               if (cloudRes.result && cloudRes.result.code === 0) {
                 wx.showToast({ title: '取消成功', icon: 'success' });
-                // Refresh the list by calling onShow or directly manipulating the data
-                this.onShow();
+                // 优化：直接从本地列表移除，而不是重新调用 onShow 刷新整个列表
+                const updatedFavorites = this.data.favorites.filter(item => item._id !== favoriteId);
+                this.setData({ favorites: updatedFavorites });
+
+                if (updatedFavorites.length === 0 && this.data.recommendProducts.length === 0 && !this.data.isRecommendLoading) {
+                  this.fetchRecommendProducts();
+                }
               } else {
                 util.showError((cloudRes.result && cloudRes.result.message) || '取消失败');
               }
